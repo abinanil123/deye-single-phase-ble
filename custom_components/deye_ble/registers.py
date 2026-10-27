@@ -65,7 +65,9 @@ CONTROL_BLOCKS: list[tuple[int, int]] = [
     (0x0068, 1),   # 0x0068 zero-export power (W, signed)
     (0x0073, 3),   # 0x0073/0x0074/0x0075 batt shutdown/restart/low SOC (%)
     (0x008E, 2),   # 0x008F max sell power (0x008E is not the work mode here — that is 0x00F4)
-    (0x00E4, 1),   # 0x00E4 System Time panel flags — bit 0 is Time Sync
+    (0x00D2, 2),   # 0x00D2 max charge current, 0x00D3 max discharge current (A)
+    (0x00E4, 1),   # 0x00E4 System Time panel flags - bit 0 is Time Sync
+    (0x00F4, 1),   # 0x00F4 work mode   # 0x00E4 System Time panel flags — bit 0 is Time Sync
 ]
 
 
@@ -110,8 +112,8 @@ REG_MAX_SELL_POWER = 0x008F
 # readings or hit read-only registers. The entities that used them are disabled
 # in number.py / switch.py / time.py until the real control addresses have been
 # read back from the inverter with the app as the reference.
-REG_MAX_CHARGE_CURRENT = 0x006C     # INVALID here: daily PV production
-REG_MAX_DISCHARGE_CURRENT = 0x006D  # INVALID here: PV1 voltage
+REG_MAX_CHARGE_CURRENT = 0x00D2     # Battery max charge current (A)
+REG_MAX_DISCHARGE_CURRENT = 0x00D3  # Battery max discharge current (A)
 REG_CHARGE_SOC = 0x00A7             # INVALID here: internal CT L1 power
 REG_GEN_PEAK_POWER = 0x00BE         # INVALID here: battery power
 REG_GRID_PEAK_POWER = 0x00BF        # INVALID here: battery current
@@ -230,6 +232,8 @@ _DECODE_MAP: dict[str, tuple[int, float, bool, int]] = {
     "batt_restart_soc":        (0x0074, 1,    False, 0),     # %
     "batt_low_soc":            (0x0075, 1,    False, 0),     # %
     "max_sell_power":          (0x008F, 1,    False, 0),     # W
+    "max_charge_current":      (0x00D2, 1,    False, 0),     # A
+    "max_discharge_current":   (0x00D3, 1,    False, 0),     # A
     # work_mode (enum) and the 0x00E4 Time Sync bit are handled specially below.
 }
 
