@@ -150,6 +150,14 @@ WORK_MODE_LABELS: dict[int, str] = {
 
 _WORK_MODE_IDS: dict[str, int] = {v: k for k, v in WORK_MODE_LABELS.items()}
 
+RUNNING_STATUS_LABELS: dict[int, str] = {
+    0: "Standby",
+    1: "Self-Checking",
+    2: "Normal",
+    3: "Alarm",
+    4: "Fault",
+}
+
 IO_MODE_LABELS: dict[int, str] = {
     0: "Disabled",
     1: "SmartLoad",
@@ -298,6 +306,10 @@ def decode(words_by_reg: dict[int, list[int]]) -> dict[str, float | int | str | 
     if work_mode_raw is not None:
         result["work_mode"] = WORK_MODE_LABELS.get(work_mode_raw, f"Unknown ({work_mode_raw})")
 
+    running_status_raw = _lookup(words_by_reg, 0x003B)
+    if running_status_raw is not None:
+        result["running_status"] = RUNNING_STATUS_LABELS.get(running_status_raw, "Normal")
+
     io_mode_raw = _lookup(words_by_reg, REG_IO_MODE)
     if io_mode_raw is not None:
         result["io_mode"] = IO_MODE_LABELS.get(io_mode_raw, f"Unknown ({io_mode_raw})")
@@ -412,3 +424,4 @@ def decode_hhmm(raw: int) -> str:
     if not (0 <= hour <= 23 and 0 <= minute <= 59):
         raise ValueError(f"invalid HHMM register value: {raw}")
     return f"{hour:02d}:{minute:02d}"
+
