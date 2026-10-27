@@ -1,6 +1,6 @@
-"""Sensor entities mirroring the ha-deyecloud-bridge sensor set.
+﻿"""Sensor entities mirroring the ha-deyecloud-bridge sensor set.
 
-All telemetry sensors are thin CoordinatorEntity wrappers â€” logic lives in
+All telemetry sensors are thin CoordinatorEntity wrappers Ã¢â‚¬â€ logic lives in
 registers.decode (P2) and helpers.daily_calc (P4). No non-trivial logic here.
 """
 from __future__ import annotations
@@ -45,8 +45,8 @@ SENSORS: list[tuple] = [
     ("battery_voltage",         "Battery Voltage",        "V",   SensorDeviceClass.VOLTAGE,     SensorStateClass.MEASUREMENT,    None,                            2),
     ("pv1_voltage",             "PV1 Voltage",            "V",   SensorDeviceClass.VOLTAGE,     SensorStateClass.MEASUREMENT,    "mdi:solar-panel",               1),
     ("pv1_current",             "PV1 Current",            "A",   SensorDeviceClass.CURRENT,     SensorStateClass.MEASUREMENT,    "mdi:solar-panel",               1),
-    ("battery_temp",            "Battery Temperature",    "°C",  SensorDeviceClass.TEMPERATURE, SensorStateClass.MEASUREMENT,    None,                            1),
-    ("inverter_temp",           "Inverter Temperature",   "°C",  SensorDeviceClass.TEMPERATURE, SensorStateClass.MEASUREMENT,    None,                            1),
+    ("battery_temp",            "Battery Temperature",    "Â°C",  SensorDeviceClass.TEMPERATURE, SensorStateClass.MEASUREMENT,    None,                            1),
+    ("inverter_temp",           "Inverter Temperature",   "Â°C",  SensorDeviceClass.TEMPERATURE, SensorStateClass.MEASUREMENT,    None,                            1),
     ("daily_solar",             "Solar Today",            "kWh", SensorDeviceClass.ENERGY,      SensorStateClass.TOTAL_INCREASING, "mdi:solar-power",             2),
     ("daily_grid_import",       "Grid Import Today",      "kWh", SensorDeviceClass.ENERGY,      SensorStateClass.TOTAL_INCREASING, "mdi:transmission-tower-import", 2),
     ("daily_grid_export",       "Grid Export Today",      "kWh", SensorDeviceClass.ENERGY,      SensorStateClass.TOTAL_INCREASING, "mdi:transmission-tower-export", 2),
@@ -71,7 +71,7 @@ SENSORS: list[tuple] = [
 
 
 # Read-only status sensors. Kept separate so they can carry
-# SensorDeviceClass.ENUM plus a fixed option list — that is what makes Home
+# SensorDeviceClass.ENUM plus a fixed option list â€” that is what makes Home
 # Assistant render them as state chips instead of free text.
 ENUM_SENSORS: list[tuple] = [
     ("work_mode",      "Work Mode",
@@ -83,6 +83,9 @@ ENUM_SENSORS: list[tuple] = [
     ("grid_status",    "Grid Status",
      ["BUY", "SELL", "IDLE"],
      "mdi:transmission-tower"),
+    ("running_status", "Inverter Status",
+     ["Standby", "Self-Checking", "Normal", "Alarm", "Fault"],
+     "mdi:information-outline"),
     ("battery_status", "Battery Status",
      ["Charging", "Discharging", "Stand-by"],
      "mdi:battery-heart-variant"),
@@ -159,8 +162,8 @@ class DeyeInverterClockSensor(DeyeSensor):
     """The inverter's own real-time clock, as read on the config cycle.
 
     The device reports a bare wall clock with no timezone; HA's timestamp
-    device class needs an aware datetime, so site time is attached here â€” at the
-    entity boundary, where the assumption is visible â€” rather than in the decode.
+    device class needs an aware datetime, so site time is attached here Ã¢â‚¬â€ at the
+    entity boundary, where the assumption is visible Ã¢â‚¬â€ rather than in the decode.
     """
 
     _attr_entity_category = EntityCategory.DIAGNOSTIC
@@ -181,18 +184,18 @@ class DeyeInverterClockSensor(DeyeSensor):
 
 
 class DeyeClockSyncResultSensor(CoordinatorEntity, SensorEntity):
-    """The result of the last clock sync â€” deliberately NOT a device reading.
+    """The result of the last clock sync Ã¢â‚¬â€ deliberately NOT a device reading.
 
     Availability is fixed True rather than following the coordinator, and that
     is the whole point of the entity existing separately. Every other entity
     here reports what the inverter currently says, so when polling fails they
-    are rightly unavailable â€” and an unavailable entity has its attributes
+    are rightly unavailable Ã¢â‚¬â€ and an unavailable entity has its attributes
     stripped by HA entirely. That would take the sync result down with the
     telemetry: a sync that verified, followed by one failed poll, would leave a
     verifier seeing nothing and calling a good sync a failure. What we know
     about a completed sync does not stop being true when the radio drops.
 
-    Reads "unknown" until a sync has actually run â€” never a fabricated success.
+    Reads "unknown" until a sync has actually run Ã¢â‚¬â€ never a fabricated success.
     """
 
     _attr_has_entity_name = True
@@ -223,7 +226,7 @@ class DeyeClockSyncResultSensor(CoordinatorEntity, SensorEntity):
             return None
         return {
             # sync_id identifies the run: a verifier compares it against the
-            # value it saw before calling the service. sync_at is for humans â€”
+            # value it saw before calling the service. sync_at is for humans Ã¢â‚¬â€
             # comparing timestamps would assume a monotonic wall clock, which
             # is precisely what this feature exists to fix.
             "sync_id": data["clock_sync_id"],
@@ -237,7 +240,7 @@ class DeyeClockDriftSensor(DeyeSensor):
 
     Positive means the inverter is running ahead of HA. The value is a snapshot
     taken when the clock was read (up to CONFIG_READ_INTERVAL old), not a live
-    countdown â€” see helpers.clock_drift_seconds.
+    countdown Ã¢â‚¬â€ see helpers.clock_drift_seconds.
     """
 
     _attr_entity_category = EntityCategory.DIAGNOSTIC
@@ -251,7 +254,7 @@ class DeyeClockDriftSensor(DeyeSensor):
 
 
 class DeyeClockTimeOfDayDriftSensor(DeyeSensor):
-    """Clock drift with the date ignored â€” the time-of-day component alone.
+    """Clock drift with the date ignored Ã¢â‚¬â€ the time-of-day component alone.
 
     Kept alongside the total drift, not instead of it: a wrong year is a real
     fault worth seeing, but it swamps the minutes-scale offset that identifies
@@ -348,4 +351,5 @@ class DeyeDailyConsumptionSensor(CoordinatorEntity, RestoreEntity, SensorEntity)
         self._baseline, self._day, self._value = daily_calc(
             self._baseline, self._day, total, today,
         )
+
 
