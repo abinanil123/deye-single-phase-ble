@@ -64,11 +64,14 @@ _LOGGER = logging.getLogger(__name__)
 # exist optimistically (no read-back until P5 adds TOU reads). All are carried
 # forward across polls so a config value isn't dropped (blanking its entity) on
 # the telemetry-only cycles between config reads.
-_CONFIG_KEYS = ("work_mode", "max_sell_power", "zero_export_power")
+_CONFIG_KEYS = ("work_mode", "max_sell_power", "zero_export_power", "max_charge_current", "max_discharge_current")
 _SLOW_KEYS = (
     "total_solar", "total_grid_import", "total_grid_export",
     "total_battery_charge", "total_battery_discharge", "total_consumption",
-    "daily_solar", "daily_grid_import", "daily_grid_export",
+    "daily_solar", "daily_grid_import", "daily_grid_export", "daily_load_energy",
+    "daily_battery_charge", "daily_battery_discharge",
+    "max_solar_power", "running_status", "total_load_energy",
+    "dc_temperature", "ac_temperature",
     "pv1_voltage", "pv1_current", "pv2_voltage", "pv2_current",
     "battery_temp", "battery_soc_bms", "inverter_temp", "io_mode",
     "grid_voltage_l1", "grid_voltage_l2", "grid_voltage_l3", "grid_frequency",
@@ -143,6 +146,8 @@ class DeyeBleCoordinator(DataUpdateCoordinator):
         # "br-connection-canceled". This lock serializes all BLE sessions.
         self._ble_lock = asyncio.Lock()
         self._slow_interval = SLOW_TELEMETRY_INTERVAL
+        self._fast_interval = 60
+        self._scan_interval = scan_interval
         self._last_slow_read = 0.0
         self._cloud_sync_interval = DEFAULT_CLOUD_SYNC_INTERVAL
         self._cloud_window_duration = DEFAULT_CLOUD_WINDOW_DURATION
@@ -200,6 +205,28 @@ class DeyeBleCoordinator(DataUpdateCoordinator):
 
     def set_cloud_window_duration(self, value: int) -> None:
         self._cloud_window_duration = value
+
+    @property
+    def scan_interval_seconds(self) -> int:
+        return getattr(self, "_scan_interval", 5)
+
+    def set_scan_interval(self, value: int) -> None:
+        self._scan_interval = max(1, min(10, value))
+        self.update_interval = timedelta(seconds=self._scan_interval)
+
+    @property
+    def fast_interval_seconds(self) -> int:
+        return getattr(self, "_fast_interval", 60)
+
+    def set_fast_interval(self, value: int) -> None:
+        self._fast_interval = max(15, min(300, value))
+
+    @property
+    def slow_interval_seconds(self) -> int:
+        return getattr(self, "_slow_interval", 1800)
+
+    def set_slow_interval(self, value: int) -> None:
+        self._slow_interval = max(300, min(3600, value))
 
     @property
     def keepalive(self) -> bool:
@@ -1030,4 +1057,5 @@ class DeyeBleCoordinator(DataUpdateCoordinator):
         # Track for drift detection only once the batch has fully verified.
         for reg, value in regs.items():
             self._tracked_values[reg] = value
+
 
