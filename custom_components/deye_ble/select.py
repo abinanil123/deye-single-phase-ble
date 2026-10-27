@@ -1,4 +1,4 @@
-"""Select entities for Deye BLE integration."""
+﻿"""Select entities for Deye BLE integration."""
 from __future__ import annotations
 
 from homeassistant.components.select import SelectEntity
@@ -11,16 +11,14 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .const import CONF_LOGGER_SN, DEVICE_NAME, DOMAIN
 from .registers import REG_WORK_MODE, WORK_MODE_LABELS, encode_work_mode
 
-MODE_KEEPALIVE_CLOUD = "Keepalive - with Deye Cloud"
-MODE_KEEPALIVE_LOCAL = "Keepalive - no Deye Cloud"
-MODE_NO_KEEPALIVE = "No Keepalive"
-MODE_DISABLED = "Disabled (Firmware / Cloud Only)"
+MODE_BLE_CLOUD = "BLE with Deye Cloud"
+MODE_BLE_LOCAL = "BLE no Deye Cloud"
+MODE_NO_BLE = "No BLE (Only Deye Cloud)"
 
 CONNECTION_MODES = [
-    MODE_KEEPALIVE_CLOUD,
-    MODE_KEEPALIVE_LOCAL,
-    MODE_NO_KEEPALIVE,
-    MODE_DISABLED,
+    MODE_BLE_CLOUD,
+    MODE_BLE_LOCAL,
+    MODE_NO_BLE,
 ]
 
 
@@ -28,7 +26,10 @@ async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback,
 ) -> None:
     coordinator = hass.data[DOMAIN][entry.entry_id]
-    entities = [DeyeConnectionModeSelect(coordinator, entry)]
+    entities = [
+        DeyeConnectionModeSelect(coordinator, entry),
+        DeyeWorkModeSelect(coordinator, entry),
+    ]
     async_add_entities(entities)
 
 
@@ -42,7 +43,7 @@ def _device_info(sn: str) -> DeviceInfo:
 
 
 class DeyeConnectionModeSelect(CoordinatorEntity, SelectEntity):
-    """Dropdown entity to control BLE polling mode, keepalive, and cloud coexistence."""
+    """Dropdown entity to control BLE polling mode and cloud coexistence."""
 
     _attr_has_entity_name = True
     _attr_name = "Connection Mode"
@@ -58,28 +59,20 @@ class DeyeConnectionModeSelect(CoordinatorEntity, SelectEntity):
     @property
     def current_option(self) -> str:
         if not self.coordinator.ble_enabled:
-            return MODE_DISABLED
-        if not self.coordinator.keepalive:
-            return MODE_NO_KEEPALIVE
+            return MODE_NO_BLE
         if self.coordinator.fully_local:
-            return MODE_KEEPALIVE_LOCAL
-        return MODE_KEEPALIVE_CLOUD
+            return MODE_BLE_LOCAL
+        return MODE_BLE_CLOUD
 
     async def async_select_option(self, option: str) -> None:
-        if option == MODE_DISABLED:
+        if option == MODE_NO_BLE:
             await self.coordinator.async_set_ble_enabled(False)
-        elif option == MODE_NO_KEEPALIVE:
-            await self.coordinator.async_set_ble_enabled(True)
-            self.coordinator.set_fully_local(False)
-            await self.coordinator.async_set_keepalive(False)
-        elif option == MODE_KEEPALIVE_LOCAL:
+        elif option == MODE_BLE_LOCAL:
             await self.coordinator.async_set_ble_enabled(True)
             self.coordinator.set_fully_local(True)
-            await self.coordinator.async_set_keepalive(True)
-        elif option == MODE_KEEPALIVE_CLOUD:
+        elif option == MODE_BLE_CLOUD:
             await self.coordinator.async_set_ble_enabled(True)
             self.coordinator.set_fully_local(False)
-            await self.coordinator.async_set_keepalive(True)
 
         self.async_write_ha_state()
 
