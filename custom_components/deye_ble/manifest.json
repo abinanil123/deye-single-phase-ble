@@ -1,0 +1,24 @@
+{
+    "domain":  "deye_ble",
+    "name":  "Deye Bluetooth (Local)",
+    "bluetooth":  [
+                      {
+                          "service_uuid":  "00000922-0000-1000-8000-00805f9b34fb"
+                      }
+                  ],
+    "codeowners":  [
+                       "@abinanil123"
+                   ],
+    "config_flow":  true,
+    "dependencies":  [
+                         "bluetooth_adapters"
+                     ],
+    "documentation":  "https://github.com/abinanil123/deye-single-phase-ble",
+    "iot_class":  "local_polling",
+    "issue_tracker":  "https://github.com/abinanil123/deye-single-phase-ble/issues",
+    "requirements":  [
+                         "bleak\u003e=0.22.0",
+                         "bleak-retry-connector\u003e=3.0.0"
+                     ],
+    "version":  "1.0.0"
+}
