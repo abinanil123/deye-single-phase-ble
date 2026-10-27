@@ -1,11 +1,4 @@
-﻿"""Switch entities â€” peak-shaving enable toggles.
-
-Grid and generator peak-shaving enables both live in the packed 0x00B2
-Advanced-Function-1 bitfield, alongside other (unmapped) function bits. Each
-toggle therefore read-modify-writes: it takes the last-polled raw word, flips
-only its own bit, and writes the whole register back â€” so enabling grid shaving
-never disturbs the generator bit (or anything else in 0x00B2).
-"""
+"""Switch entities for Deye BLE integration."""
 from __future__ import annotations
 
 import logging
@@ -32,16 +25,9 @@ _LOGGER = logging.getLogger(__name__)
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback,
 ) -> None:
-    coordinator = hass.data[DOMAIN][entry.entry_id]
-    sn = entry.data[CONF_LOGGER_SN]
-    async_add_entities([
-        DeyeBleActiveSwitch(coordinator, entry, sn),
-        DeyeFullyLocalSwitch(coordinator, entry, sn),
-    ])
-    # Grid/Gen Peak Shaving switches are deliberately NOT added: their enable
-    # bits live in 0x00B2 on the three-phase layout, but 0x00B2 is total load
-    # power on this inverter, so a read-modify-write there would corrupt a live
-    # reading. The classes stay for when the real flag register is confirmed.
+    # All coexistence and local modes are now cleanly unified in select.connection_mode.
+    # No redundant switches are added.
+    async_add_entities([])
 
 
 def _device_info(sn: str) -> DeviceInfo:
@@ -54,12 +40,7 @@ def _device_info(sn: str) -> DeviceInfo:
 
 
 class _PeakShaveSwitch(CoordinatorEntity, SwitchEntity):
-    """One enable bit of the packed 0x00B2 peak-shaving flag register.
-
-    Subclasses declare ``_mask`` (the enable bit) and ``_data_key`` (the decoded
-    bool key + unique-id suffix). Toggling read-modify-writes 0x00B2 so the other
-    function bits are preserved.
-    """
+    """One enable bit of the packed 0x00B2 peak-shaving flag register."""
 
     _attr_has_entity_name = True
     _attr_device_class = SwitchDeviceClass.SWITCH
@@ -79,8 +60,6 @@ class _PeakShaveSwitch(CoordinatorEntity, SwitchEntity):
     async def _async_set(self, on: bool) -> None:
         raw = (self.coordinator.data or {}).get("peak_shaving_flags_raw")
         if raw is None:
-            # Without the current word we cannot safely RMW â€” refuse rather than
-            # write a value that could clear the other function bits.
             raise HomeAssistantError(
                 "peak-shaving flag register (0x00B2) not read yet; cannot toggle safely"
             )
@@ -113,53 +92,3 @@ class DeyeGenPeakShaving(_PeakShaveSwitch):
     _data_key = "gen_peak_shaving"
     _attr_name = "Gen Peak Shaving"
     _attr_icon = "mdi:engine"
-
-
-class DeyeBleActiveSwitch(CoordinatorEntity, SwitchEntity):
-    """Toggle BLE communication on or off."""
-
-    _attr_has_entity_name = True
-    _attr_name = "BLE Communication"
-    _attr_icon = "mdi:bluetooth"
-
-    def __init__(self, coordinator, entry: ConfigEntry, sn: str):
-        super().__init__(coordinator)
-        self._attr_unique_id = f"{sn}_ble_communication"
-        self._attr_device_info = _device_info(sn)
-
-    @property
-    def is_on(self) -> bool:
-        return self.coordinator.ble_enabled
-
-    async def async_turn_on(self, **kwargs) -> None:
-        await self.coordinator.async_set_ble_enabled(True)
-        self.async_write_ha_state()
-
-    async def async_turn_off(self, **kwargs) -> None:
-        await self.coordinator.async_set_ble_enabled(False)
-        self.async_write_ha_state()
-
-
-class DeyeFullyLocalSwitch(CoordinatorEntity, SwitchEntity):
-    """Toggle 100% Fully Local Mode (disables cloud pause)."""
-
-    _attr_has_entity_name = True
-    _attr_name = "Fully Local Mode (No Cloud)"
-    _attr_icon = "mdi:lan-connect"
-
-    def __init__(self, coordinator, entry: ConfigEntry, sn: str):
-        super().__init__(coordinator)
-        self._attr_unique_id = f"{sn}_fully_local_mode"
-        self._attr_device_info = _device_info(sn)
-
-    @property
-    def is_on(self) -> bool:
-        return self.coordinator.fully_local
-
-    async def async_turn_on(self, **kwargs) -> None:
-        self.coordinator.set_fully_local(True)
-        self.async_write_ha_state()
-
-    async def async_turn_off(self, **kwargs) -> None:
-        self.coordinator.set_fully_local(False)
-        self.async_write_ha_state()
