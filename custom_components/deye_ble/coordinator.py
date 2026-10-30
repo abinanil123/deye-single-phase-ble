@@ -85,14 +85,14 @@ _SLOW_KEYS = (
     "max_solar_power", "running_status", "inverter_status", "total_load_energy",
     "dc_temperature", "ac_temperature",
     "pv1_voltage", "pv1_current", "pv2_voltage", "pv2_current",
-    "battery_temp", "battery_soc_bms", "inverter_temp", "io_mode",
+    "battery_temp", "battery_soc_bms", "inverter_temp", "io_mode", "has_fault", "has_alarm", "fault_message", "alarm_message",
     "grid_voltage_l1", "grid_current_l1", "grid_voltage_l2", "grid_voltage_l3", "grid_frequency",
     "bms_charge_voltage", "bms_discharge_voltage",
     "bms_charge_current_limit", "bms_discharge_current_limit",
 )
 _CARRY_KEYS = _CONFIG_KEYS + _SLOW_KEYS + (
     "charge_soc", "discharge_soc", "charge_start", "charge_end",
-    "energy_priority", "solar_sell", "grid_charge_enabled", "tou_enabled",
+    "energy_priority", "solar_sell", "fault_codes", "grid_charge_enabled", "tou_enabled",
     "smartload_min_solar_power", "gen_peak_shaving_power", "grid_peak_shaving_power",
     "peak_shaving_flags_raw", "grid_peak_shaving", "gen_peak_shaving",
     "gen_peak_power", "grid_peak_power",
