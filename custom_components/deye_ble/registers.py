@@ -1,4 +1,4 @@
-"""P2 — Register map, telemetry decoders, and control encoders.
+﻿"""P2 — Register map, telemetry decoders, and control encoders.
 
 Maps the Deye logger's Modbus holding registers to the Home Assistant entity
 keys used by ha-deyecloud-bridge, so the BLE integration is a drop-in.
@@ -62,8 +62,7 @@ READ_BLOCKS: list[tuple[int, int]] = FAST_BLOCKS + SLOW_BLOCKS
 # meaning this installation has seen read back sensibly are polled here.
 CONTROL_BLOCKS: list[tuple[int, int]] = [
     (0x003E, 3),   # 0x003E..0x0040 inverter real-time clock
-    (0x0068, 1),   # 0x0068 zero-export power (W, signed)
-    (0x00D2, 10),  # 0x00D2..0x00DB batt max charge/discharge + shutdown/restart/low SOC
+    (0x00CE, 14),  # 0x00CE..0x00DB zero export (0x00CE), batt current limits & SOCs
     (0x00E4, 5),   # 0x00E4 time sync, 0x00E6 grid charge current, 0x00E8 grid charge enable
     (0x00EB, 14),  # 0x00EB..0x00F8 io_mode, smartload, energy priority, work mode, max sell, solar sell, tou
     (0x0118, 1),   # 0x0118 peak shaving master flags
@@ -84,7 +83,7 @@ CLOCK_WORD_COUNT = 3
 REG_TIME_SYNC = 0x00E4
 TIME_SYNC_MASK = 0x0001
 
-REG_ZERO_EXPORT_POWER = 0x0068          # zero-export power / grid-comp offset (W, signed)
+REG_ZERO_EXPORT_POWER = 0x00CE          # Zero Export Power offset (W, single-phase LP1)
 REG_MAX_CHARGE_CURRENT = 0x00D2         # Battery max charge current (A, 0-185)
 REG_MAX_DISCHARGE_CURRENT = 0x00D3      # Battery max discharge current (A, 0-185)
 REG_BATT_SHUTDOWN_SOC = 0x00D9          # Battery shutdown SOC (%, single-phase LP1)
@@ -216,7 +215,7 @@ _DECODE_MAP: dict[str, tuple[int, float, bool, int]] = {
     "total_load_energy":       (0x0055, 0.1,  False, 0),
 
     # Control mirrors (decoded from CONTROL_BLOCKS)
-    "zero_export_power":       (0x0068, 1,    True,  0),     # W (grid-comp offset)
+    "zero_export_power":       (0x00CE, 1,    False, 0),     # W (grid-comp offset)
     "max_charge_current":      (0x00D2, 1,    False, 0),     # A
     "max_discharge_current":   (0x00D3, 1,    False, 0),     # A
     "batt_shutdown_soc":       (0x00D9, 1,    False, 0),     # %
