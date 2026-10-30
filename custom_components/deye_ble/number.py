@@ -1,4 +1,4 @@
-﻿"""Number entities for Deye BLE integration with multi-tier sliders and holding register controls."""
+"""Number entities for Deye BLE integration with multi-tier sliders and holding register controls."""
 from __future__ import annotations
 
 import logging
@@ -15,10 +15,15 @@ from .registers import (
     REG_BATT_LOW_SOC,
     REG_BATT_RESTART_SOC,
     REG_BATT_SHUTDOWN_SOC,
-    REG_CHARGE_SOC,
+    REG_GEN_PEAK_SHAVING_POWER,
+    REG_GRID_CHARGE_CURRENT,
+    REG_GRID_PEAK_SHAVING_POWER,
     REG_MAX_CHARGE_CURRENT,
     REG_MAX_DISCHARGE_CURRENT,
     REG_MAX_SELL_POWER,
+    REG_SMARTLOAD_MIN_SOLAR_POWER,
+    REG_SMARTLOAD_OFF_SOC,
+    REG_SMARTLOAD_ON_SOC,
     REG_ZERO_EXPORT_POWER,
 )
 
@@ -39,14 +44,20 @@ async def async_setup_entry(
         DeyeCloudSyncInterval(coordinator, entry, sn),
         DeyeCloudWindowDuration(coordinator, entry, sn),
 
-        # Inverter holding register controls (Settings 51-57)
+        # Inverter holding register controls
         DeyeMaxSellPower(coordinator, entry, sn),
         DeyeZeroExportPower(coordinator, entry, sn),
+        DeyeMaxChargeCurrent(coordinator, entry, sn),
+        DeyeMaxDischargeCurrent(coordinator, entry, sn),
+        DeyeGridChargeCurrent(coordinator, entry, sn),
         DeyeBattShutdownSoc(coordinator, entry, sn),
         DeyeBattRestartSoc(coordinator, entry, sn),
         DeyeBattLowSoc(coordinator, entry, sn),
-        DeyeMaxChargeCurrent(coordinator, entry, sn),
-        DeyeMaxDischargeCurrent(coordinator, entry, sn),
+        DeyeSmartloadOffSoc(coordinator, entry, sn),
+        DeyeSmartloadOnSoc(coordinator, entry, sn),
+        DeyeSmartloadMinSolarPower(coordinator, entry, sn),
+        DeyeGridPeakShavingPower(coordinator, entry, sn),
+        DeyeGenPeakShavingPower(coordinator, entry, sn),
     ]
     async_add_entities(entities)
 
@@ -77,6 +88,7 @@ class _SingleRegisterNumber(CoordinatorEntity, NumberEntity):
 
     async def async_set_native_value(self, value: float) -> None:
         int_val = int(value)
+        # Note: If Safety Lock switch is OFF, async_write raises HomeAssistantError
         await self.coordinator.async_write(self._register, int_val)
         self.coordinator.async_set_updated_data(
             {**(self.coordinator.data or {}), self._data_key: int_val},
@@ -110,6 +122,45 @@ class DeyeZeroExportPower(_SingleRegisterNumber):
     _attr_native_step = 1
     _attr_mode = NumberMode.BOX
     _attr_device_class = NumberDeviceClass.POWER
+
+
+class DeyeMaxChargeCurrent(_SingleRegisterNumber):
+    _register = REG_MAX_CHARGE_CURRENT
+    _data_key = "max_charge_current"
+    _attr_name = "Max Charge Current"
+    _attr_icon = "mdi:battery-arrow-up"
+    _attr_native_unit_of_measurement = "A"
+    _attr_native_min_value = 0
+    _attr_native_max_value = 185
+    _attr_native_step = 1
+    _attr_mode = NumberMode.BOX
+    _attr_device_class = NumberDeviceClass.CURRENT
+
+
+class DeyeMaxDischargeCurrent(_SingleRegisterNumber):
+    _register = REG_MAX_DISCHARGE_CURRENT
+    _data_key = "max_discharge_current"
+    _attr_name = "Max Discharge Current"
+    _attr_icon = "mdi:battery-arrow-down"
+    _attr_native_unit_of_measurement = "A"
+    _attr_native_min_value = 0
+    _attr_native_max_value = 185
+    _attr_native_step = 1
+    _attr_mode = NumberMode.BOX
+    _attr_device_class = NumberDeviceClass.CURRENT
+
+
+class DeyeGridChargeCurrent(_SingleRegisterNumber):
+    _register = REG_GRID_CHARGE_CURRENT
+    _data_key = "grid_charge_current"
+    _attr_name = "Grid Charge Current Limit"
+    _attr_icon = "mdi:battery-charging-wireless"
+    _attr_native_unit_of_measurement = "A"
+    _attr_native_min_value = 0
+    _attr_native_max_value = 185
+    _attr_native_step = 1
+    _attr_mode = NumberMode.BOX
+    _attr_device_class = NumberDeviceClass.CURRENT
 
 
 class DeyeBattShutdownSoc(_SingleRegisterNumber):
@@ -148,30 +199,67 @@ class DeyeBattLowSoc(_SingleRegisterNumber):
     _attr_mode = NumberMode.BOX
 
 
-class DeyeMaxChargeCurrent(_SingleRegisterNumber):
-    _register = REG_MAX_CHARGE_CURRENT
-    _data_key = "max_charge_current"
-    _attr_name = "Max Charge Current"
-    _attr_icon = "mdi:battery-arrow-up"
-    _attr_native_unit_of_measurement = "A"
+class DeyeSmartloadOffSoc(_SingleRegisterNumber):
+    _register = REG_SMARTLOAD_OFF_SOC
+    _data_key = "smartload_off_soc"
+    _attr_name = "SmartLoad OFF SOC"
+    _attr_icon = "mdi:lightning-bolt-circle"
+    _attr_native_unit_of_measurement = "%"
     _attr_native_min_value = 0
-    _attr_native_max_value = 185
+    _attr_native_max_value = 100
     _attr_native_step = 1
     _attr_mode = NumberMode.BOX
-    _attr_device_class = NumberDeviceClass.CURRENT
 
 
-class DeyeMaxDischargeCurrent(_SingleRegisterNumber):
-    _register = REG_MAX_DISCHARGE_CURRENT
-    _data_key = "max_discharge_current"
-    _attr_name = "Max Discharge Current"
-    _attr_icon = "mdi:battery-arrow-down"
-    _attr_native_unit_of_measurement = "A"
+class DeyeSmartloadOnSoc(_SingleRegisterNumber):
+    _register = REG_SMARTLOAD_ON_SOC
+    _data_key = "smartload_on_soc"
+    _attr_name = "SmartLoad ON SOC"
+    _attr_icon = "mdi:lightning-bolt-circle"
+    _attr_native_unit_of_measurement = "%"
     _attr_native_min_value = 0
-    _attr_native_max_value = 185
+    _attr_native_max_value = 100
     _attr_native_step = 1
     _attr_mode = NumberMode.BOX
-    _attr_device_class = NumberDeviceClass.CURRENT
+
+
+class DeyeSmartloadMinSolarPower(_SingleRegisterNumber):
+    _register = REG_SMARTLOAD_MIN_SOLAR_POWER
+    _data_key = "smartload_min_solar_power"
+    _attr_name = "SmartLoad Min Solar Power"
+    _attr_icon = "mdi:solar-power"
+    _attr_native_unit_of_measurement = "W"
+    _attr_native_min_value = 0
+    _attr_native_max_value = 8000
+    _attr_native_step = 50
+    _attr_mode = NumberMode.BOX
+    _attr_device_class = NumberDeviceClass.POWER
+
+
+class DeyeGridPeakShavingPower(_SingleRegisterNumber):
+    _register = REG_GRID_PEAK_SHAVING_POWER
+    _data_key = "grid_peak_shaving_power"
+    _attr_name = "Grid Peak Shaving Power Limit"
+    _attr_icon = "mdi:transmission-tower"
+    _attr_native_unit_of_measurement = "W"
+    _attr_native_min_value = 0
+    _attr_native_max_value = 16000
+    _attr_native_step = 50
+    _attr_mode = NumberMode.BOX
+    _attr_device_class = NumberDeviceClass.POWER
+
+
+class DeyeGenPeakShavingPower(_SingleRegisterNumber):
+    _register = REG_GEN_PEAK_SHAVING_POWER
+    _data_key = "gen_peak_shaving_power"
+    _attr_name = "Gen Peak Shaving Power Limit"
+    _attr_icon = "mdi:engine"
+    _attr_native_unit_of_measurement = "W"
+    _attr_native_min_value = 0
+    _attr_native_max_value = 16000
+    _attr_native_step = 50
+    _attr_mode = NumberMode.BOX
+    _attr_device_class = NumberDeviceClass.POWER
 
 
 # --- POLLING INTERVAL SLIDERS ---
