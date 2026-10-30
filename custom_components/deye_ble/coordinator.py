@@ -1,4 +1,4 @@
-﻿"""HA DataUpdateCoordinator for the Deye BLE integration.
+"""HA DataUpdateCoordinator for the Deye BLE integration.
 
 This module imports homeassistant (it subclasses DataUpdateCoordinator so that
 CoordinatorEntity attaches correctly). The pure, HA-free poll orchestration and
@@ -89,6 +89,7 @@ _SLOW_KEYS = (
     "grid_voltage_l1", "grid_current_l1", "grid_voltage_l2", "grid_voltage_l3", "grid_frequency",
     "bms_charge_voltage", "bms_discharge_voltage",
     "bms_charge_current_limit", "bms_discharge_current_limit",
+    "rated_power", "battery_rated_capacity", "total_dc_input_power", "grid_total_reactive_power",
 )
 _CARRY_KEYS = _CONFIG_KEYS + _SLOW_KEYS + (
     "charge_soc", "discharge_soc", "charge_start", "charge_end",
