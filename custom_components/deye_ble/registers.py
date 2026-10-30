@@ -31,7 +31,7 @@ from datetime import datetime
 # SOC, SmartLoad, grid power/voltage, inverter output, grid connected, load).
 # Four blocks, 42 registers: well under a second on this link.
 FAST_BLOCKS: list[tuple[int, int]] = [
-    (0x0096, 12),  # grid voltage L1 (0x0096), load voltage L1 (0x009D)
+    (0x0096, 12),  # grid voltage L1 (0x0096), load voltage L1 (0x009D), grid current L1 (0x00A0)
     (0x00A2, 12),  # load current (0x00A4), SmartLoad (0x00A6), internal CT (0x00A7),
                    # grid (0x00A9), external CT (0x00AA), inverter power L1 (0x00AD)
     (0x00B0, 16),  # load power L1 (0x00B0), total load (0x00B2), battery temp (0x00B6),
@@ -51,7 +51,7 @@ SLOW_BLOCKS: list[tuple[int, int]] = [
     (0x005A, 2),   # 0x005A..0x005B — DC and AC heatsink temperatures
     (0x0060, 2),   # 0x0060..0x0061 — total PV production (uint32, low word first)
     (0x006C, 5),   # 0x006C..0x0070 — daily PV production, PV1 V/I, PV2 V/I
-    (0x00EB, 10),  # 0x00EB..0x00F4 — IO/AUX mode (0x00EB), work mode (0x00F4)
+    (0x00EB, 14),  # 0x00EB..0x00F8 — IO/AUX mode (0x00EB), smartload, work mode (0x00F4), max sell (0x00F5), solar sell (0x00F7), tou (0x00F8)
     (0x013C, 1),   # BMS battery SOC (%) — cross-check for the fast 0x00B8 value
 ]
 
@@ -63,10 +63,11 @@ READ_BLOCKS: list[tuple[int, int]] = FAST_BLOCKS + SLOW_BLOCKS
 CONTROL_BLOCKS: list[tuple[int, int]] = [
     (0x003E, 3),   # 0x003E..0x0040 inverter real-time clock
     (0x0068, 1),   # 0x0068 zero-export power (W, signed)
-    (0x0073, 3),   # 0x0073/0x0074/0x0075 batt shutdown/restart/low SOC (%)
-    (0x00D2, 2),   # 0x00D2 max charge current, 0x00D3 max discharge current (A)
-    (0x00E4, 1),   # 0x00E4 System Time panel flags - bit 0 is Time Sync
-    (0x00F4, 2),   # 0x00F4 work mode, 0x00F5 max sell power (W) on single-phase LP1
+    (0x00D2, 10),  # 0x00D2..0x00DB batt max charge/discharge + shutdown/restart/low SOC
+    (0x00E4, 5),   # 0x00E4 time sync, 0x00E6 grid charge current, 0x00E8 grid charge enable
+    (0x00EB, 14),  # 0x00EB..0x00F8 io_mode, smartload, energy priority, work mode, max sell, solar sell, tou
+    (0x0118, 1),   # 0x0118 peak shaving master flags
+    (0x0124, 2),   # 0x0124 gen peak power, 0x0125 grid peak power
 ]
 
 
@@ -76,79 +77,59 @@ CONTROL_BLOCKS: list[tuple[int, int]] = [
 #   0x003E  hi = year-2000, lo = month
 #   0x003F  hi = day,       lo = hour
 #   0x0040  hi = minute,    lo = second
-# Writing these registers alone does nothing: the RTC latches them only on the
-# Time Sync falling edge below (coordinator.async_sync_clock drives the full
-# sequence).
 REG_CLOCK = 0x003E
 CLOCK_WORD_COUNT = 3
 
-# System Time panel flags. Bit 0 is Time Sync, and the RTC commits the staged
-# clock registers when it goes 1 -> 0. Live values are 0x0AEB (on) / 0x0AEA
-# (off): the app only ever writes the low byte, and the high byte carries the
-# panel's other controls (AM/PM, Auto Dim, Beep, Factory Reset) — so this is
-# always a read-modify-write via set_flag, never a literal.
-#
-# Time Sync OFF also stops the logger's cloud calibration reaching the RTC.
-# Since the commit edge *ends* with the bit clear, any writer must put it back
-# where it found it, or setting the clock silently disables the only other
-# mechanism that corrects it.
+# System Time panel flags. Bit 0 is Time Sync.
 REG_TIME_SYNC = 0x00E4
 TIME_SYNC_MASK = 0x0001
 
-REG_ZERO_EXPORT_POWER = 0x0068      # zero-export power / grid-comp offset (W, signed) — unverified here
-REG_BATT_SHUTDOWN_SOC = 0x0073      # battery shutdown SOC (%) — unverified here
-REG_BATT_RESTART_SOC = 0x0074       # battery restart SOC (%) — unverified here
-REG_BATT_LOW_SOC = 0x0075           # battery low-warning SOC (%) — unverified here
-REG_WORK_MODE = 0x00F4              # work mode, as read by the working ESP32 firmware
-REG_IO_MODE = 0x00EB                # SmartLoad / generator / microinverter port mode
-REG_MAX_SELL_POWER = 0x00F5  # Single-phase holding register (W)
+REG_ZERO_EXPORT_POWER = 0x0068          # zero-export power / grid-comp offset (W, signed)
+REG_MAX_CHARGE_CURRENT = 0x00D2         # Battery max charge current (A, 0-185)
+REG_MAX_DISCHARGE_CURRENT = 0x00D3      # Battery max discharge current (A, 0-185)
+REG_BATT_SHUTDOWN_SOC = 0x00D9          # Battery shutdown SOC (%, single-phase LP1)
+REG_BATT_RESTART_SOC = 0x00DA           # Battery restart SOC (%, single-phase LP1)
+REG_BATT_LOW_SOC = 0x00DB               # Battery low-warning SOC (%, single-phase LP1)
+REG_GRID_CHARGE_CURRENT = 0x00E6        # Grid charge current limit (A, 0-185)
+REG_GRID_CHARGE_ENABLE = 0x00E8         # Grid charge master toggle (0/1)
+REG_IO_MODE = 0x00EB                    # AUX / SmartLoad / Generator port mode
+REG_SMARTLOAD_OFF_SOC = 0x00ED          # SmartLoad OFF SOC (%)
+REG_SMARTLOAD_ON_SOC = 0x00EF           # SmartLoad ON SOC (%)
+REG_SMARTLOAD_MIN_SOLAR_POWER = 0x00F1  # SmartLoad min solar power threshold (W)
+REG_ENERGY_PRIORITY = 0x00F3            # Energy pattern: 0=Battery First, 1=Load First
+REG_WORK_MODE = 0x00F4                  # Single-phase work mode: 0=Selling, 1=Zero Export Load, 2=Zero Export CT
+REG_MAX_SELL_POWER = 0x00F5             # Single-phase holding register: Max Sell Power (W)
+REG_SOLAR_SELL_ENABLE = 0x00F7          # Solar Sell / Export surplus toggle (0/1)
+REG_TOU_ENABLE = 0x00F8                 # Time-of-Use master enable (0=Disabled, 0x00FF=Enabled)
 
-# --- Control addresses that are NOT valid on this inverter -------------------
-# These were carried over from the three-phase register layout. On this unit the
-# same addresses are live telemetry (0x006C daily PV production, 0x006D PV1
-# voltage, 0x00A6 gen power, 0x00A7 internal CT, 0x00B2 total load power,
-# 0x00BE battery power, 0x00BF battery current), so writing them would clobber
-# readings or hit read-only registers. The entities that used them are disabled
-# in number.py / switch.py / time.py until the real control addresses have been
-# read back from the inverter with the app as the reference.
-REG_MAX_CHARGE_CURRENT = 0x00D2     # Battery max charge current (A)
-REG_MAX_DISCHARGE_CURRENT = 0x00D3  # Battery max discharge current (A)
-REG_CHARGE_SOC = 0x00A7             # INVALID here: internal CT L1 power
-REG_GEN_PEAK_POWER = 0x00BE         # INVALID here: battery power
-REG_GRID_PEAK_POWER = 0x00BF        # INVALID here: battery current
-REG_TOU_SLOT2_START = 0x0095        # unverified on this unit
-REG_TOU_SLOT3_START = 0x0096        # INVALID here: grid voltage L1
+# Peak-shaving controls (0x0118 bitfield and 0x0124/0x0125 power ceilings)
+REG_PEAK_SHAVING_FLAGS = 0x0118
+GRID_PEAK_SHAVE_MASK = 0x0100           # 0x0118 bit 8 — grid peak-shaving enable
+GEN_PEAK_SHAVE_MASK = 0x0010            # 0x0118 bit 4 — generator peak-shaving enable
+REG_GEN_PEAK_SHAVING_POWER = 0x0124     # Generator peak-shaving power limit (W)
+REG_GRID_PEAK_SHAVING_POWER = 0x0125    # Grid peak-shaving power limit (W)
 
-# Discharge floor used to be written to the TOU target-SOC slots 0x00A6..0x00AB.
-# Those addresses are gen power / internal CT / grid power / external CT on this
-# inverter, so the fan-out is empty: nothing may write there. Kept as a name so
-# the entity module still imports cleanly.
+# Kept for backward compatibility
+REG_CHARGE_SOC = 0x00A7
+REG_GEN_PEAK_POWER = 0x0124
+REG_GRID_PEAK_POWER = 0x0125
+REG_TOU_SLOT2_START = 0x00FA
+REG_TOU_SLOT3_START = 0x00FB
 DISCHARGE_SOC_REGS: list[int] = []
-
-# Peak-shaving controls. 0x00B2 is a packed bitfield on the three-phase family;
-# on this unit it is total load power. Kept for import compatibility, not polled.
-REG_PEAK_SHAVING_FLAGS = 0x00B2
-GEN_PEAK_SHAVE_MASK = 0x0004    # 0x00B2 bit 2 — generator peak-shaving enable
-GRID_PEAK_SHAVE_MASK = 0x0010   # 0x00B2 bit 4 — grid peak-shaving enable
 
 
 def set_flag(raw: int, mask: int, on: bool) -> int:
-    """Return *raw* with *mask* bits set when *on*, cleared otherwise.
-
-    Used for read-modify-write on the packed Time Sync flag register so a single
-    toggle never clobbers the other panel bits sharing it.
-    """
+    """Return *raw* with *mask* bits set when *on*, cleared otherwise."""
     return (raw | mask) if on else (raw & ~mask)
 
 
-# --- Work mode enum ---------------------------------------------------------
+# --- Enums and Labels --------------------------------------------------------
 
 WORK_MODE_LABELS: dict[int, str] = {
     0: "Sell to Grid",
     1: "Zero Export to Load",
     2: "Zero Export to CT",
 }
-
 _WORK_MODE_IDS: dict[str, int] = {v: k for k, v in WORK_MODE_LABELS.items()}
 
 RUNNING_STATUS_LABELS: dict[int, str] = {
@@ -160,11 +141,17 @@ RUNNING_STATUS_LABELS: dict[int, str] = {
 }
 
 IO_MODE_LABELS: dict[int, str] = {
-    0: "Disabled",
+    0: "Generator",
     1: "SmartLoad",
     2: "Microinverter",
-    3: "Generator",
 }
+_IO_MODE_IDS: dict[str, int] = {v: k for k, v in IO_MODE_LABELS.items()}
+
+ENERGY_PRIORITY_LABELS: dict[int, str] = {
+    0: "Battery First",
+    1: "Load First",
+}
+_ENERGY_PRIORITY_IDS: dict[str, int] = {v: k for k, v in ENERGY_PRIORITY_LABELS.items()}
 
 
 # --- Decode map --------------------------------------------------------------
@@ -201,6 +188,7 @@ _DECODE_MAP: dict[str, tuple[int, float, bool, int]] = {
 
     # AC metrics
     "grid_voltage_l1":         (0x0096, 0.1,  False, 0),     # V
+    "grid_current_l1":         (0x00A0, 0.01, True,  0),     # A
     "grid_frequency":          (0x004F, 0.01, False, 0),     # Hz
     "load_voltage_l1":         (0x009D, 0.1,  False, 0),     # V
     "load_current_l1":         (0x00A4, 0.01, True,  0),     # A
@@ -215,6 +203,8 @@ _DECODE_MAP: dict[str, tuple[int, float, bool, int]] = {
 
     # Energy — daily (kWh)
     "daily_solar":             (0x006C, 0.1,  False, 0),
+    "daily_battery_charge":    (0x0046, 0.1,  False, 0),
+    "daily_battery_discharge": (0x0047, 0.1,  False, 0),
     "daily_grid_import":       (0x004C, 0.1,  False, 0),
     "daily_grid_export":       (0x004D, 0.1,  False, 0),
     "daily_load_energy":       (0x0054, 0.1,  False, 0),
@@ -227,21 +217,24 @@ _DECODE_MAP: dict[str, tuple[int, float, bool, int]] = {
 
     # Control mirrors (decoded from CONTROL_BLOCKS)
     "zero_export_power":       (0x0068, 1,    True,  0),     # W (grid-comp offset)
-    "batt_shutdown_soc":       (0x0073, 1,    False, 0),     # %
-    "batt_restart_soc":        (0x0074, 1,    False, 0),     # %
-    "batt_low_soc":            (0x0075, 1,    False, 0),     # %
-    "max_sell_power":          (0x00F5, 1,    False, 0),     # W
     "max_charge_current":      (0x00D2, 1,    False, 0),     # A
     "max_discharge_current":   (0x00D3, 1,    False, 0),     # A
-    # work_mode (enum) and the 0x00E4 Time Sync bit are handled specially below.
+    "batt_shutdown_soc":       (0x00D9, 1,    False, 0),     # %
+    "batt_restart_soc":        (0x00DA, 1,    False, 0),     # %
+    "batt_low_soc":            (0x00DB, 1,    False, 0),     # %
+    "grid_charge_current":     (0x00E6, 1,    False, 0),     # A
+    "smartload_off_soc":       (0x00ED, 1,    False, 0),     # %
+    "smartload_on_soc":        (0x00EF, 1,    False, 0),     # %
+    "smartload_min_solar_power":(0x00F1, 1,   False, 0),     # W
+    "max_sell_power":          (0x00F5, 1,    False, 0),     # W
+    "gen_peak_shaving_power":  (0x0124, 1,    False, 0),     # W
+    "grid_peak_shaving_power": (0x0125, 1,    False, 0),     # W
 }
 
 # 32-bit lifetime PV production, little-endian word pair.
 REG_TOTAL_PRODUCTION = 0x0060
 
 # 32-bit lifetime battery energy counters, little-endian word pairs, 0.1 kWh.
-# Verified against Deye Cloud on 2026-10-26: 0x0048/0x0049 = 3308 -> 330.8 kWh
-# (cloud total charge), 0x004A/0x004B = 2231 -> 223.1 kWh (cloud total discharge).
 REG_TOTAL_BATTERY_CHARGE = 0x0048
 REG_TOTAL_BATTERY_DISCHARGE = 0x004A
 _BATTERY_TOTALS: tuple[tuple[str, int], ...] = (
@@ -267,13 +260,7 @@ def _lookup(words_by_reg: dict[int, list[int]], reg: int) -> int | None:
 
 
 def decode(words_by_reg: dict[int, list[int]]) -> dict[str, float | int | str | datetime]:
-    """Decode raw register words into HA entity key/value pairs.
-
-    *words_by_reg* maps each polled block's start address to its list of
-    register values (as returned by ``protocol.parse_read``). Keys whose
-    registers were not present in *words_by_reg* are omitted, so a partial
-    poll yields a partial dict rather than wrong values.
-    """
+    """Decode raw register words into HA entity key/value pairs."""
     result: dict[str, float | int | str | datetime] = {}
 
     for key, (reg, scale, signed, offset) in _DECODE_MAP.items():
@@ -284,8 +271,7 @@ def decode(words_by_reg: dict[int, list[int]]) -> dict[str, float | int | str | 
         value = (value - offset) * scale
         result[key] = int(value) if (scale == 1 and offset == 0) else round(value, 2)
 
-    # Lifetime PV production is one 32-bit counter split over two registers,
-    # low word first: (w0 | w1 << 16) * 0.1 kWh.
+    # Lifetime PV production is one 32-bit counter split over two registers
     low = _lookup(words_by_reg, REG_TOTAL_PRODUCTION)
     high = _lookup(words_by_reg, REG_TOTAL_PRODUCTION + 1)
     if low is not None and high is not None:
@@ -298,50 +284,79 @@ def decode(words_by_reg: dict[int, list[int]]) -> dict[str, float | int | str | 
         if low is not None and high is not None:
             result[key] = round(((high << 16) | low) * 0.1, 2)
 
-    # Solar power is the sum of the two strings. PV2 reads 0 while unwired, so
-    # this tracks PV1 exactly today and needs no change when PV2 is connected.
+    # Solar power is the sum of the two strings
     if "pv1_power" in result or "pv2_power" in result:
         result["solar_power"] = int(
             result.get("pv1_power", 0) + result.get("pv2_power", 0)
         )
 
+    # Work mode
     work_mode_raw = _lookup(words_by_reg, REG_WORK_MODE)
     if work_mode_raw is not None:
         result["work_mode"] = WORK_MODE_LABELS.get(work_mode_raw, f"Unknown ({work_mode_raw})")
 
+    # Inverter status
     running_status_raw = _lookup(words_by_reg, 0x003B)
     if running_status_raw is not None:
-        result["running_status"] = RUNNING_STATUS_LABELS.get(running_status_raw, "Normal")
+        status_label = RUNNING_STATUS_LABELS.get(running_status_raw, "Normal")
+        result["running_status"] = status_label
+        result["inverter_status"] = status_label
 
+    # AC voltage alias
+    if "grid_voltage_l1" in result:
+        result["ac_voltage_l1"] = result["grid_voltage_l1"]
+
+    # IO / AUX mode
     io_mode_raw = _lookup(words_by_reg, REG_IO_MODE)
     if io_mode_raw is not None:
         result["io_mode"] = IO_MODE_LABELS.get(io_mode_raw, f"Unknown ({io_mode_raw})")
 
-    # Inverter RTC — three packed registers, decoded together. An implausible
-    # frame yields no key at all: undecoded beats quietly wrong for a clock.
+    # Energy Priority
+    energy_priority_raw = _lookup(words_by_reg, REG_ENERGY_PRIORITY)
+    if energy_priority_raw is not None:
+        result["energy_priority"] = ENERGY_PRIORITY_LABELS.get(energy_priority_raw, "Load First")
+
+    # Solar Sell switch mirror
+    solar_sell_raw = _lookup(words_by_reg, REG_SOLAR_SELL_ENABLE)
+    if solar_sell_raw is not None:
+        result["solar_sell"] = bool(solar_sell_raw)
+
+    # Grid Charge master switch mirror
+    grid_charge_raw = _lookup(words_by_reg, REG_GRID_CHARGE_ENABLE)
+    if grid_charge_raw is not None:
+        result["grid_charge_enabled"] = bool(grid_charge_raw)
+
+    # Time of Use master switch mirror
+    tou_raw = _lookup(words_by_reg, REG_TOU_ENABLE)
+    if tou_raw is not None:
+        result["tou_enabled"] = bool(tou_raw)
+
+    # Peak shaving flags
+    peak_raw = _lookup(words_by_reg, REG_PEAK_SHAVING_FLAGS)
+    if peak_raw is not None:
+        result["peak_shaving_flags_raw"] = peak_raw
+        result["grid_peak_shaving"] = bool(peak_raw & GRID_PEAK_SHAVE_MASK)
+        result["gen_peak_shaving"] = bool(peak_raw & GEN_PEAK_SHAVE_MASK)
+
+    # Inverter RTC
     clock_words = [_lookup(words_by_reg, REG_CLOCK + i) for i in range(CLOCK_WORD_COUNT)]
     if all(w is not None for w in clock_words):
         clock = decode_clock(clock_words)
         if clock is not None:
             result["inverter_clock"] = clock
 
-    # Time Sync enable — bit 0 of the packed System Time panel register. Only
-    # the decoded bool is published; a writer must re-read the raw word inside
-    # its own session, since the other bits are not ours to replay.
+    # Time Sync enable
     time_sync_raw = _lookup(words_by_reg, REG_TIME_SYNC)
     if time_sync_raw is not None:
         result["time_sync"] = bool(time_sync_raw & TIME_SYNC_MASK)
 
-    # UPS load = total load minus the SmartLoad / generator port contribution.
+    # UPS load = total load minus SmartLoad
     if "house_load" in result and "gen_power" in result:
         result["ups_load_power"] = round(result["house_load"] - result["gen_power"], 1)
     elif "ups_power" in result:
         result["ups_load_power"] = result["ups_power"]
 
-    # Derived operating states, using the same 20 W dead-bands as the original
-    # ESP32 firmware. Both source values are in the fast blocks, so these track
-    # every poll. Sign convention is Deye's: grid_power > 0 is import (BUY) and
-    # battery_power < 0 is charge current into the battery.
+    # Operating states
     if "grid_power" in result:
         grid_power = result["grid_power"]
         result["grid_status"] = (
@@ -361,15 +376,6 @@ def decode(words_by_reg: dict[int, list[int]]) -> dict[str, float | int | str | 
 # --- Encoders ---------------------------------------------------------------
 
 def decode_clock(words: list[int]) -> datetime | None:
-    """Decode the three packed RTC registers to a naive local ``datetime``.
-
-    The inverter stores a bare wall clock with no timezone, so the result is
-    deliberately naive — attaching a timezone below the entity layer would
-    invent information the device never reported.
-
-    Returns ``None`` when the frame does not describe a real date/time (the
-    ``datetime`` constructor rejects month 13, day 32, hour 24, and friends).
-    """
     if len(words) < CLOCK_WORD_COUNT:
         return None
     year, month = 2000 + (words[0] >> 8), words[0] & 0xFF
@@ -382,13 +388,6 @@ def decode_clock(words: list[int]) -> datetime | None:
 
 
 def encode_clock(value: datetime) -> list[int]:
-    """Encode a local ``datetime`` to the three packed RTC registers.
-
-    Inverse of :func:`decode_clock`. Only the wall-clock fields are used, so an
-    aware value encodes as the site time it displays — the inverter has no
-    timezone to convert into. The words are staged in the registers; committing
-    them is the Time Sync edge's job (see REG_TIME_SYNC).
-    """
     if not 2000 <= value.year <= 2255:
         raise ValueError(f"year out of register range: {value.year}")
     return [
@@ -399,16 +398,18 @@ def encode_clock(value: datetime) -> list[int]:
 
 
 def encode_work_mode(label: str) -> int:
-    """Encode a work-mode label to its register value (0, 1, or 2)."""
     return _WORK_MODE_IDS[label]
 
 
-def encode_hhmm(time_str: str) -> int:
-    """Encode ``'HH:MM'`` to decimal HHMM for a TOU time register.
+def encode_io_mode(label: str) -> int:
+    return _IO_MODE_IDS[label]
 
-    Example: ``'14:00'`` -> ``1400`` (``0x0578``). Rejects malformed or
-    out-of-range times.
-    """
+
+def encode_energy_priority(label: str) -> int:
+    return _ENERGY_PRIORITY_IDS[label]
+
+
+def encode_hhmm(time_str: str) -> int:
     parts = time_str.split(":")
     if len(parts) != 2 or not all(len(p) == 2 and p.isdigit() for p in parts):
         raise ValueError(f"expected canonical 'HH:MM', got {time_str!r}")
@@ -419,12 +420,7 @@ def encode_hhmm(time_str: str) -> int:
 
 
 def decode_hhmm(raw: int) -> str:
-    """Decode a TOU time register value to ``'HH:MM'``.
-
-    Example: ``0x05DC`` (1500) -> ``'15:00'``. Rejects out-of-range raw values.
-    """
     hour, minute = divmod(raw, 100)
     if not (0 <= hour <= 23 and 0 <= minute <= 59):
         raise ValueError(f"invalid HHMM register value: {raw}")
     return f"{hour:02d}:{minute:02d}"
-
