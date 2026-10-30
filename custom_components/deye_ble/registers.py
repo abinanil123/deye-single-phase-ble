@@ -1,4 +1,4 @@
-﻿"""P2 — Register map, telemetry decoders, and control encoders.
+"""P2 — Register map, telemetry decoders, and control encoders.
 
 Maps the Deye logger's Modbus holding registers to the Home Assistant entity
 keys used by ha-deyecloud-bridge, so the BLE integration is a drop-in.
@@ -50,6 +50,7 @@ SLOW_BLOCKS: list[tuple[int, int]] = [
     (0x004C, 10),  # 0x004C..0x0055 — daily/total grid energy, grid frequency, load energy
     (0x005A, 2),   # 0x005A..0x005B — DC and AC heatsink temperatures
     (0x0060, 2),   # 0x0060..0x0061 — total PV production (uint32, low word first)
+    (0x0065, 6),   # 0x0065..0x006A — Alarm 1 & 2 (0x0065..0x0066), Hardware Faults 1-4 (0x0067..0x006A)
     (0x006C, 5),   # 0x006C..0x0070 — daily PV production, PV1 V/I, PV2 V/I
     (0x00EB, 14),  # 0x00EB..0x00F8 — IO/AUX mode (0x00EB), smartload, work mode (0x00F4), max sell (0x00F5), solar sell (0x00F7), tou (0x00F8)
     (0x013C, 1),   # BMS battery SOC (%) — cross-check for the fast 0x00B8 value
@@ -242,6 +243,57 @@ _BATTERY_TOTALS: tuple[tuple[str, int], ...] = (
 )
 
 
+DEYE_FAULT_CODES: dict[int, str] = {
+    1: "F01: DC input polarity reversed",
+    2: "F02: DC insulation impedance low",
+    3: "F03: Leakage current high",
+    4: "F04: Grounding fault",
+    5: "F05: Grid voltage abnormal",
+    6: "F06: DC/DC soft start failure",
+    7: "F07: DC/DC overcurrent",
+    8: "F08: Grid voltage low",
+    9: "F09: Auxiliary power supply failure",
+    10: "F10: Grid voltage high",
+    11: "F11: Grid frequency high",
+    12: "F12: Grid frequency low",
+    13: "F13: Working mode changed",
+    14: "F14: DC bus voltage high",
+    15: "F15: DC bus voltage low",
+    16: "F16: GFCI sensor failure",
+    17: "F17: AC overcurrent software protection",
+    18: "F18: AC overcurrent hardware protection",
+    19: "F19: Tz_Integ_Fault failure",
+    20: "F20: DC overcurrent hardware protection",
+    21: "F21: DC overcurrent software protection",
+    22: "F22: Tz_GFCI_OC_Fault",
+    23: "F23: AC leakage current failure",
+    24: "F24: DC component high",
+    25: "F25: DC bus unbalance",
+    26: "F26: DC bus pre-charge failure",
+    27: "F27: Relay open check failure",
+    28: "F28: Relay short check failure",
+    29: "F29: Parallel communication failure",
+    30: "F30: Parallel current unbalance",
+    31: "F31: Battery reverse connection",
+    32: "F32: Master/slave comms failure",
+    33: "F33: AC overcurrent in backup mode",
+    34: "F34: AC voltage high in backup mode",
+    35: "F35: No AC Grid detected",
+    36: "F36: Backup overload",
+    37: "F37: Fan failure",
+    38: "F38: Internal EEPROM read/write failure",
+    41: "F41: Parallel CAN communication fault",
+    42: "F42: Master missing in parallel system",
+    46: "F46: Inverter heatsink over-temperature",
+    47: "F47: Grid frequency out of range",
+    48: "F48: Grid impedance high",
+    56: "F56: DC Bus low voltage",
+    58: "F58: BMS communication loss",
+    63: "F63: ARC fault detected",
+    64: "F64: Heatsink over-temperature failure",
+}
+
+
 # --- Decode -----------------------------------------------------------------
 
 def _signed16(raw: int) -> int:
@@ -368,6 +420,35 @@ def decode(words_by_reg: dict[int, list[int]]) -> dict[str, float | int | str | 
             if battery_power < -20
             else "Discharging" if battery_power > 20 else "Stand-by"
         )
+
+    # Decoded hardware faults (Registers 103..106: 0x0067..0x006A)
+    f0 = _lookup(words_by_reg, 0x0067)
+    f1 = _lookup(words_by_reg, 0x0068)
+    f2 = _lookup(words_by_reg, 0x0069)
+    f3 = _lookup(words_by_reg, 0x006A)
+    if all(w is not None for w in (f0, f1, f2, f3)):
+        fault_mask = f0 | (f1 << 16) | (f2 << 32) | (f3 << 48)
+        if fault_mask == 0:
+            result["has_fault"] = False
+            result["fault_message"] = "OK"
+            result["fault_codes"] = []
+        else:
+            result["has_fault"] = True
+            active = []
+            for bit in range(64):
+                if fault_mask & (1 << bit):
+                    code_num = bit + 1
+                    active.append(DEYE_FAULT_CODES.get(code_num, f"F{code_num:02d}: Hardware Fault {code_num}"))
+            result["fault_codes"] = active
+            result["fault_message"] = "; ".join(active) if active else "Fault Active"
+
+    # Decoded alarms (Registers 101..102: 0x0065..0x0066)
+    a0 = _lookup(words_by_reg, 0x0065)
+    a1 = _lookup(words_by_reg, 0x0066)
+    if a0 is not None and a1 is not None:
+        alarm_mask = a0 | (a1 << 16)
+        result["has_alarm"] = bool(alarm_mask != 0)
+        result["alarm_message"] = "Warning Active" if alarm_mask != 0 else "OK"
 
     return result
 
