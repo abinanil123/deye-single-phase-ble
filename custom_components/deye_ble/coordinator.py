@@ -64,28 +64,38 @@ _LOGGER = logging.getLogger(__name__)
 # exist optimistically (no read-back until P5 adds TOU reads). All are carried
 # forward across polls so a config value isn't dropped (blanking its entity) on
 # the telemetry-only cycles between config reads.
-_CONFIG_KEYS = ("work_mode", "max_sell_power", "zero_export_power", "max_charge_current", "max_discharge_current")
+_CONFIG_KEYS = (
+    "work_mode",
+    "max_sell_power",
+    "zero_export_power",
+    "max_charge_current",
+    "max_discharge_current",
+    "batt_shutdown_soc",
+    "batt_restart_soc",
+    "batt_low_soc",
+    "grid_charge_current",
+    "smartload_off_soc",
+    "smartload_on_soc",
+)
 _SLOW_KEYS = (
     "total_solar", "total_grid_import", "total_grid_export",
     "total_battery_charge", "total_battery_discharge", "total_consumption",
     "daily_solar", "daily_grid_import", "daily_grid_export", "daily_load_energy",
     "daily_battery_charge", "daily_battery_discharge",
-    "max_solar_power", "running_status", "total_load_energy",
+    "max_solar_power", "running_status", "inverter_status", "total_load_energy",
     "dc_temperature", "ac_temperature",
     "pv1_voltage", "pv1_current", "pv2_voltage", "pv2_current",
     "battery_temp", "battery_soc_bms", "inverter_temp", "io_mode",
-    "grid_voltage_l1", "grid_voltage_l2", "grid_voltage_l3", "grid_frequency",
+    "grid_voltage_l1", "grid_current_l1", "grid_voltage_l2", "grid_voltage_l3", "grid_frequency",
     "bms_charge_voltage", "bms_discharge_voltage",
     "bms_charge_current_limit", "bms_discharge_current_limit",
 )
 _CARRY_KEYS = _CONFIG_KEYS + _SLOW_KEYS + (
     "charge_soc", "discharge_soc", "charge_start", "charge_end",
-    "max_charge_current", "max_discharge_current",
-    "batt_shutdown_soc", "batt_low_soc", "batt_restart_soc",
+    "energy_priority", "solar_sell", "grid_charge_enabled", "tou_enabled",
+    "smartload_min_solar_power", "gen_peak_shaving_power", "grid_peak_shaving_power",
     "peak_shaving_flags_raw", "grid_peak_shaving", "gen_peak_shaving",
     "gen_peak_power", "grid_peak_power",
-    # Clock + drift are a matched snapshot â€” carried together so the reported
-    # drift always belongs to the clock reading it was measured against.
     "inverter_clock", "inverter_clock_drift", "inverter_time_of_day_drift",
     "time_sync",
 )
@@ -556,8 +566,13 @@ class DeyeBleCoordinator(DataUpdateCoordinator):
         but Time Sync could not be re-enabled.
         """
         if self._dry_run:
-            _LOGGER.info("dry-run: would sync inverter clock (no GATT write issued)")
-            return
+            for reg, value in regs.items():
+                _LOGGER.warning(
+                    "Inverter write blocked (Safety Lock ACTIVE / Dry-Run): Would write reg 0x%04X = %d", reg, value
+                )
+            raise HomeAssistantError(
+                "Inverter write blocked! Turn ON 'Allow Inverter Writes' safety switch before modifying settings."
+            )
 
         ble_device = self._resolve_device()
         pre_flags: int | None = None
@@ -1016,10 +1031,12 @@ class DeyeBleCoordinator(DataUpdateCoordinator):
         # Checked first so it works even when the device is momentarily absent.
         if self._dry_run:
             for reg, value in regs.items():
-                _LOGGER.info(
-                    "dry-run: would write reg 0x%04X = %d (no GATT write issued)", reg, value
+                _LOGGER.warning(
+                    "Inverter write blocked (Safety Lock ACTIVE / Dry-Run): Would write reg 0x%04X = %d", reg, value
                 )
-            return
+            raise HomeAssistantError(
+                "Inverter write blocked! Turn ON 'Allow Inverter Writes' safety switch before modifying settings."
+            )
 
         ble_device = async_ble_device_from_address(
             self.hass, self._address, connectable=True
