@@ -1,4 +1,4 @@
-﻿"""P2 — Register map, telemetry decoders, and control encoders.
+"""P2 — Register map, telemetry decoders, and control encoders.
 
 Maps the Deye logger's Modbus holding registers to the Home Assistant entity
 keys used by ha-deyecloud-bridge, so the BLE integration is a drop-in.
@@ -64,10 +64,9 @@ CONTROL_BLOCKS: list[tuple[int, int]] = [
     (0x003E, 3),   # 0x003E..0x0040 inverter real-time clock
     (0x0068, 1),   # 0x0068 zero-export power (W, signed)
     (0x0073, 3),   # 0x0073/0x0074/0x0075 batt shutdown/restart/low SOC (%)
-    (0x008E, 2),   # 0x008F max sell power (0x008E is not the work mode here — that is 0x00F4)
     (0x00D2, 2),   # 0x00D2 max charge current, 0x00D3 max discharge current (A)
     (0x00E4, 1),   # 0x00E4 System Time panel flags - bit 0 is Time Sync
-    (0x00F4, 1),   # 0x00F4 work mode   # 0x00E4 System Time panel flags — bit 0 is Time Sync
+    (0x00F4, 2),   # 0x00F4 work mode, 0x00F5 max sell power (W) on single-phase LP1
 ]
 
 
@@ -102,7 +101,7 @@ REG_BATT_RESTART_SOC = 0x0074       # battery restart SOC (%) — unverified her
 REG_BATT_LOW_SOC = 0x0075           # battery low-warning SOC (%) — unverified here
 REG_WORK_MODE = 0x00F4              # work mode, as read by the working ESP32 firmware
 REG_IO_MODE = 0x00EB                # SmartLoad / generator / microinverter port mode
-REG_MAX_SELL_POWER = 0x008F
+REG_MAX_SELL_POWER = 0x00F5  # Single-phase holding register (W)
 
 # --- Control addresses that are NOT valid on this inverter -------------------
 # These were carried over from the three-phase register layout. On this unit the
@@ -231,7 +230,7 @@ _DECODE_MAP: dict[str, tuple[int, float, bool, int]] = {
     "batt_shutdown_soc":       (0x0073, 1,    False, 0),     # %
     "batt_restart_soc":        (0x0074, 1,    False, 0),     # %
     "batt_low_soc":            (0x0075, 1,    False, 0),     # %
-    "max_sell_power":          (0x008F, 1,    False, 0),     # W
+    "max_sell_power":          (0x00F5, 1,    False, 0),     # W
     "max_charge_current":      (0x00D2, 1,    False, 0),     # A
     "max_discharge_current":   (0x00D3, 1,    False, 0),     # A
     # work_mode (enum) and the 0x00E4 Time Sync bit are handled specially below.
