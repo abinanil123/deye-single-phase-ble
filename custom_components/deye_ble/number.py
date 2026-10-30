@@ -1,8 +1,9 @@
-"""Number entities for Deye BLE integration with multi-tier sliders and holding register controls."""
+﻿"""Number entities for Deye BLE integration with multi-tier sliders and holding register controls."""
 from __future__ import annotations
 
 import logging
 
+from homeassistant.const import EntityCategory
 from homeassistant.components.number import NumberDeviceClass, NumberEntity, NumberMode
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -117,8 +118,8 @@ class DeyeZeroExportPower(_SingleRegisterNumber):
     _attr_name = "Zero Export Power"
     _attr_icon = "mdi:transmission-tower-import"
     _attr_native_unit_of_measurement = "W"
-    _attr_native_min_value = -500
-    _attr_native_max_value = 1000
+    _attr_native_min_value = 0
+    _attr_native_max_value = 500
     _attr_native_step = 1
     _attr_mode = NumberMode.BOX
     _attr_device_class = NumberDeviceClass.POWER
@@ -266,7 +267,8 @@ class DeyeGenPeakShavingPower(_SingleRegisterNumber):
 
 class DeyeLiveInterval(CoordinatorEntity, NumberEntity):
     _attr_has_entity_name = True
-    _attr_name = "Live Data Polling Interval (BLE LD)"
+    _attr_name = "BLE: Live Polling Interval (LD)"
+    _attr_entity_category = EntityCategory.CONFIG
     _attr_icon = "mdi:speedometer"
     _attr_native_min_value = 1
     _attr_native_max_value = 10
@@ -290,7 +292,8 @@ class DeyeLiveInterval(CoordinatorEntity, NumberEntity):
 
 class DeyeFastInterval(CoordinatorEntity, NumberEntity):
     _attr_has_entity_name = True
-    _attr_name = "Fast Data Polling Interval (BLE FD)"
+    _attr_name = "BLE: Fast Polling Interval (FD)"
+    _attr_entity_category = EntityCategory.CONFIG
     _attr_icon = "mdi:timer-outline"
     _attr_native_min_value = 0
     _attr_native_max_value = 300
@@ -314,7 +317,8 @@ class DeyeFastInterval(CoordinatorEntity, NumberEntity):
 
 class DeyeSlowInterval(CoordinatorEntity, NumberEntity):
     _attr_has_entity_name = True
-    _attr_name = "Slow Data Polling Interval (BLE SD)"
+    _attr_name = "BLE: Slow Polling Interval (SD)"
+    _attr_entity_category = EntityCategory.CONFIG
     _attr_icon = "mdi:clock-sand"
     _attr_native_min_value = 5
     _attr_native_max_value = 100
@@ -338,7 +342,8 @@ class DeyeSlowInterval(CoordinatorEntity, NumberEntity):
 
 class DeyeCloudSyncInterval(CoordinatorEntity, NumberEntity):
     _attr_has_entity_name = True
-    _attr_name = "Cloud Sync Frequency"
+    _attr_name = "BLE: Cloud Sync Frequency"
+    _attr_entity_category = EntityCategory.CONFIG
     _attr_icon = "mdi:cloud-upload"
     _attr_native_min_value = 1
     _attr_native_max_value = 100
@@ -362,7 +367,8 @@ class DeyeCloudSyncInterval(CoordinatorEntity, NumberEntity):
 
 class DeyeCloudWindowDuration(CoordinatorEntity, NumberEntity):
     _attr_has_entity_name = True
-    _attr_name = "Cloud Window Duration"
+    _attr_name = "BLE: Cloud Window Duration"
+    _attr_entity_category = EntityCategory.CONFIG
     _attr_icon = "mdi:timer-sand"
     _attr_native_min_value = 0
     _attr_native_max_value = 100
