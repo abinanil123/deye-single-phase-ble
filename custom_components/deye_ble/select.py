@@ -1,6 +1,7 @@
-"""Select entities for Deye BLE integration."""
+﻿"""Select entities for Deye BLE integration."""
 from __future__ import annotations
 
+from homeassistant.const import EntityCategory
 from homeassistant.components.select import SelectEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -58,7 +59,8 @@ class DeyeConnectionModeSelect(CoordinatorEntity, SelectEntity):
     """Dropdown entity to control BLE polling mode and cloud coexistence."""
 
     _attr_has_entity_name = True
-    _attr_name = "Connection Mode"
+    _attr_name = "BLE: Connection Mode"
+    _attr_entity_category = EntityCategory.CONFIG
     _attr_icon = "mdi:transit-connection-variant"
     _attr_options = CONNECTION_MODES
 
