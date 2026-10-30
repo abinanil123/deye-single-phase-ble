@@ -1,4 +1,4 @@
-"""Sensor definitions and entity implementations for Deye BLE."""
+﻿"""Sensor definitions and entity implementations for Deye BLE."""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -30,6 +30,7 @@ SENSORS: list[tuple] = [
     ("battery_soc",             "Battery SOC BLE LD",            "%",   SensorDeviceClass.BATTERY,     SensorStateClass.MEASUREMENT,    None,                            1),
     ("grid_power",              "Grid Power BLE LD",             "W",   SensorDeviceClass.POWER,       SensorStateClass.MEASUREMENT,    "mdi:transmission-tower",        0),
     ("grid_voltage_l1",         "Grid Voltage L1 BLE LD",        "V",   SensorDeviceClass.VOLTAGE,     SensorStateClass.MEASUREMENT,    None,                            1),
+    ("grid_current_l1",         "Grid Current L1 BLE LD",        "A",   SensorDeviceClass.CURRENT,     SensorStateClass.MEASUREMENT,    "mdi:transmission-tower",        2),
     ("internal_ct_l1_power",    "Internal CT L1 Power BLE LD",   "W",   SensorDeviceClass.POWER,       SensorStateClass.MEASUREMENT,    "mdi:current-ac",                0),
     ("external_ct_l1_power",    "External CT L1 Power BLE LD",   "W",   SensorDeviceClass.POWER,       SensorStateClass.MEASUREMENT,    "mdi:current-ac",                0),
     ("house_load",              "House Load BLE LD",             "W",   SensorDeviceClass.POWER,       SensorStateClass.MEASUREMENT,    "mdi:home-lightning-bolt",       0),
@@ -82,6 +83,9 @@ ENUM_SENSORS: list[tuple] = [
     ("io_mode",        "IO Mode BLE FD",
      ["Disabled", "SmartLoad", "Microinverter", "Generator"],
      "mdi:swap-horizontal"),
+    ("energy_priority", "Energy Priority BLE FD",
+     ["Battery First", "Load First"],
+     "mdi:battery-sync"),
     ("work_mode",      "Work Mode BLE FD",
      ["Sell to Grid", "Zero Export to Load", "Zero Export to CT"],
      "mdi:transmission-tower-export"),
