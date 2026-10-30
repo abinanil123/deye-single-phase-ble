@@ -44,6 +44,7 @@ FAST_BLOCKS: list[tuple[int, int]] = [
 # ratings. Polled every SLOW_TELEMETRY_INTERVAL and carried forward between
 # reads so lifetime sensors never blank out.
 SLOW_BLOCKS: list[tuple[int, int]] = [
+    (0x0016, 5),   # 0x0016..0x001A — Inverter RTC (0x0016..0x0018), Status (0x0019), Rated Power (0x001A)
     (0x0035, 1),   # max solar power (W)
     (0x003B, 1),   # running status
     (0x0046, 6),   # 0x0046..0x004B — daily + lifetime battery charge/discharge
@@ -52,6 +53,7 @@ SLOW_BLOCKS: list[tuple[int, int]] = [
     (0x0060, 2),   # 0x0060..0x0061 — total PV production (uint32, low word first)
     (0x0065, 6),   # 0x0065..0x006A — Alarm 1 & 2 (0x0065..0x0066), Hardware Faults 1-4 (0x0067..0x006A)
     (0x006C, 5),   # 0x006C..0x0070 — daily PV production, PV1 V/I, PV2 V/I
+    (0x00CC, 1),   # 0x00CC — Battery rated capacity (Ah)
     (0x00EB, 14),  # 0x00EB..0x00F8 — IO/AUX mode (0x00EB), smartload, work mode (0x00F4), max sell (0x00F5), solar sell (0x00F7), tou (0x00F8)
     (0x013C, 1),   # BMS battery SOC (%) — cross-check for the fast 0x00B8 value
 ]
@@ -62,8 +64,8 @@ READ_BLOCKS: list[tuple[int, int]] = FAST_BLOCKS + SLOW_BLOCKS
 # Control registers, read on the slower config cycle (P3). Only registers whose
 # meaning this installation has seen read back sensibly are polled here.
 CONTROL_BLOCKS: list[tuple[int, int]] = [
-    (0x003E, 3),   # 0x003E..0x0040 inverter real-time clock
-    (0x00CE, 14),  # 0x00CE..0x00DB zero export (0x00CE), batt current limits & SOCs
+    (0x0016, 5),   # 0x0016..0x001A inverter real-time clock & rated power (single-phase LP1)
+    (0x00CC, 16),  # 0x00CC..0x00DB batt capacity, zero export, batt current limits & SOCs
     (0x00E4, 5),   # 0x00E4 time sync, 0x00E6 grid charge current, 0x00E8 grid charge enable
     (0x00EB, 14),  # 0x00EB..0x00F8 io_mode, smartload, energy priority, work mode, max sell, solar sell, tou
     (0x0118, 1),   # 0x0118 peak shaving master flags
@@ -73,11 +75,11 @@ CONTROL_BLOCKS: list[tuple[int, int]] = [
 
 # --- Control register addresses ---------------------------------------------
 
-# Inverter real-time clock, three contiguous registers packed as byte pairs:
-#   0x003E  hi = year-2000, lo = month
-#   0x003F  hi = day,       lo = hour
-#   0x0040  hi = minute,    lo = second
-REG_CLOCK = 0x003E
+# Inverter real-time clock, three contiguous registers packed as byte pairs (single-phase LP1):
+#   0x0016  hi = year-2000, lo = month
+#   0x0017  hi = day,       lo = hour
+#   0x0018  hi = minute,    lo = second
+REG_CLOCK = 0x0016
 CLOCK_WORD_COUNT = 3
 
 # System Time panel flags. Bit 0 is Time Sync.
@@ -200,6 +202,8 @@ _DECODE_MAP: dict[str, tuple[int, float, bool, int]] = {
     # Status / rating
     "running_status":          (0x003B, 1,    False, 0),     # 0 standby .. 4 fault
     "max_solar_power":         (0x0035, 1,    False, 0),     # W
+    "rated_power":             (0x001A, 1,    False, 0),     # W (inverter rating)
+    "battery_rated_capacity":  (0x00CC, 1,    False, 0),     # Ah (battery rated capacity)
 
     # Energy — daily (kWh)
     "daily_solar":             (0x006C, 0.1,  False, 0),
@@ -340,6 +344,18 @@ def decode(words_by_reg: dict[int, list[int]]) -> dict[str, float | int | str | 
         result["solar_power"] = int(
             result.get("pv1_power", 0) + result.get("pv2_power", 0)
         )
+        result["total_dc_input_power"] = result["solar_power"]
+
+    # Grid Reactive Power (VAR) synthesized from apparent power (V*I) and active power (P)
+    if "grid_voltage_l1" in result and "grid_current_l1" in result and "grid_power" in result:
+        v = result["grid_voltage_l1"]
+        i = abs(result["grid_current_l1"])
+        p = abs(result["grid_power"])
+        s = v * i
+        if s > p:
+            result["grid_total_reactive_power"] = round((s * s - p * p) ** 0.5, 1)
+        else:
+            result["grid_total_reactive_power"] = 0.0
 
     # Work mode
     work_mode_raw = _lookup(words_by_reg, REG_WORK_MODE)
