@@ -66,6 +66,8 @@ SENSORS: list[tuple] = [
     ("total_battery_discharge", "Total Battery Discharge BLE SD","kWh", SensorDeviceClass.ENERGY,      SensorStateClass.TOTAL_INCREASING, None,                          2),
     ("total_consumption",       "Total Consumption BLE SD",      "kWh", SensorDeviceClass.ENERGY,      SensorStateClass.TOTAL_INCREASING, "mdi:home-lightning-bolt",     2),
     ("max_solar_power",         "Max Solar Power BLE SD",        "W",   SensorDeviceClass.POWER,       SensorStateClass.MEASUREMENT,    "mdi:solar-power",               0),
+    ("fault_message",           "Inverter Fault Message BLE SD", None,  None,                          None,                            "mdi:message-alert-outline",     None),
+    ("alarm_message",           "Inverter Warning Message BLE SD",None, None,                          None,                            "mdi:alert-outline",             None),
     ("rated_power",             "Rated Inverter Power BLE SD",   "W",   SensorDeviceClass.POWER,       SensorStateClass.MEASUREMENT,    "mdi:solar-power-variant",       0),
     ("battery_rated_capacity",  "Battery Rated Capacity BLE SD", "Ah",  None,                          None,                            "mdi:battery",                   1),
 ]
