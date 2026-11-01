@@ -1,4 +1,4 @@
-﻿"""Constants for the Deye BLE integration."""
+"""Constants for the Deye BLE integration."""
 from __future__ import annotations
 
 DOMAIN = "deye_ble"

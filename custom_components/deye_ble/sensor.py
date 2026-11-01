@@ -1,4 +1,4 @@
-﻿"""Sensor definitions and entity implementations for Deye BLE."""
+"""Sensor definitions and entity implementations for Deye BLE."""
 from __future__ import annotations
 
 from dataclasses import dataclass

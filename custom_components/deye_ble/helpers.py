@@ -1,4 +1,4 @@
-﻿"""Pure helpers â€” no HA imports, so they stay unit-testable without HA.
+"""Pure helpers â€” no HA imports, so they stay unit-testable without HA.
 
 Holds the BLE poll orchestration (async_poll), logger-SN validation, and the
 daily-baseline calculation. The HA-coupled DeyeBleCoordinator (coordinator.py)

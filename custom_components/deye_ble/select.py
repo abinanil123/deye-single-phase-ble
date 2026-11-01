@@ -1,4 +1,4 @@
-﻿"""Select entities for Deye BLE integration."""
+"""Select entities for Deye BLE integration."""
 from __future__ import annotations
 
 from homeassistant.const import EntityCategory

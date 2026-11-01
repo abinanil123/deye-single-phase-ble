@@ -1,4 +1,4 @@
-﻿"""Number entities for Deye BLE integration with multi-tier sliders and holding register controls."""
+"""Number entities for Deye BLE integration with multi-tier sliders and holding register controls."""
 from __future__ import annotations
 
 import logging

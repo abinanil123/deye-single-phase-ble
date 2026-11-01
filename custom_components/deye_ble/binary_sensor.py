@@ -1,4 +1,4 @@
-﻿"""Binary sensor entities — grid-connection state and clock-sync health."""
+"""Binary sensor entities — grid-connection state and clock-sync health."""
 from __future__ import annotations
 
 from homeassistant.components.binary_sensor import (
