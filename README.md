@@ -11,7 +11,7 @@ This project is tailored specifically for the single-phase Deye/Sunsynk LP1 plat
 
 > [!NOTE]
 > **Upstream Collaboration Status:**
-> Single-phase support developed in this project has been contributed upstream to [PetePeter/deye-bluetooth](https://github.com/PetePeter/deye-bluetooth) via **PR #8** (eat/single-phase) and **PR #9** (SmartLoad support), developed in close collaboration with Pete.
+> Single-phase support developed in this project has been contributed upstream to [PetePeter/deye-bluetooth](https://github.com/PetePeter/deye-bluetooth) via **PR #8** (`feat/single-phase`) and **PR #9** (SmartLoad support), developed in close collaboration with Pete.
 > You can either run this standalone repository (tailored 100% for single-phase LP1 units with 82 live entities and pre-tuned defaults) or test the unified multi-profile upstream integration on branch `feat/single-phase`.
 
 ---
@@ -31,7 +31,7 @@ This project is tailored specifically for the single-phase Deye/Sunsynk LP1 plat
 
 ## 🚀 Key Features & Highlights
 
-```mermaid
+``mermaid
 flowchart TD
     subgraph Inverter["Deye Single-Phase Inverter (SUN-3K/5K/8K/10K/12K/16K-SG01LP1)"]
         MCU["Core Inverter MCU"]
@@ -54,7 +54,7 @@ flowchart TD
     MCU <--> REG <--> Logger
     BLE_RADIO <-->|"Local BLE (Direct or ESP32 Proxy)"| Engine
     WIFI_RADIO -.->|"Scheduled 30s Window"| CLOUD["Deye Cloud / Solarman Mobile App"]
-```
+``
 
 ---
 
@@ -157,9 +157,9 @@ Upstream generic 3-phase integrations query three-phase addresses (`0x02xx`), wh
 1. Open **HACS** in your Home Assistant sidebar.
 2. Click the three dots `⋮` in the top right corner and select **Custom repositories**.
 3. Paste this repository URL:
-   ```text
+   ``text
    https://github.com/abinanil123/deye-single-phase-ble
-   ```
+   ``
 4. Set Type to **Integration** and click **Add**.
 5. Find **Deye Single-Phase Inverter Bluetooth** and click **Download**.
 6. Restart Home Assistant.
@@ -176,7 +176,7 @@ Upstream generic 3-phase integrations query three-phase addresses (`0x02xx`), wh
 ## 📡 Using ESP32 Bluetooth Proxy (Optional)
 If your Home Assistant server is located far from your inverter, you can use any inexpensive ESP32 board running ESPHome as an active Bluetooth proxy. Add this to your ESPHome configuration:
 
-```yaml
+``yaml
 esp32_ble_tracker:
   scan_parameters:
     interval: 1100ms
@@ -185,7 +185,7 @@ esp32_ble_tracker:
 
 bluetooth_proxy:
   active: true
-```
+``
 
 Home Assistant will automatically connect to your Deye inverter through the ESP32 proxy with zero extra configuration!
 
