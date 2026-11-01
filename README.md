@@ -1,4 +1,4 @@
-# Deye Single-Phase Inverter Bluetooth (Local BLE + Cloud Coexistence)
+﻿# Deye Single-Phase Inverter Bluetooth (Local BLE + Cloud Coexistence)
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg?style=for-the-badge)](https://github.com/hacs/default)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2024.1%2B-blue.svg?style=for-the-badge&logo=home-assistant)](https://www.home-assistant.io/)
@@ -8,6 +8,11 @@
 A high-performance Home Assistant custom integration for **Deye single-phase hybrid inverters** communicating locally and securely over **Bluetooth Low Energy (BLE)** via Home Assistant's onboard Bluetooth adapter or any standard ESP32 Bluetooth Proxy.
 
 This project is tailored specifically for the single-phase Deye/Sunsynk LP1 platform, introducing a **Master Safety Write Lock**, **3-Tier Intelligent Polling (Live, Fast, and Slow data)**, a **Cloud Coexistence Engine** (preventing official Deye Cloud / Solarman app dropouts), and a **100% verified single-phase Modbus register map**.
+
+> [!NOTE]
+> **Upstream Collaboration Status:**
+> Single-phase support developed in this project has been contributed upstream to [PetePeter/deye-bluetooth](https://github.com/PetePeter/deye-bluetooth) via **PR #8** (eat/single-phase) and **PR #9** (SmartLoad support), developed in close collaboration with Pete.
+> You can either run this standalone repository (tailored 100% for single-phase LP1 units with 82 live entities and pre-tuned defaults) or test the unified multi-profile upstream integration on branch `feat/single-phase`.
 
 ---
 
@@ -98,6 +103,10 @@ Upstream generic 3-phase integrations query three-phase addresses (`0x02xx`), wh
 
 * **Max Sell Power:** Remapped to holding register **`0x00F5`** (solving the bug where Pete's 3-phase `0x008F` read telemetry and snapped back to ~5500W instead of 5000W).
 * **Zero Export Power:** Remapped to single-phase holding register **`0x00CE`** (reads your exact trickle buffer, e.g. 20W).
+* **Inverter RTC Clock:** Remapped to single-phase registers **`0x0016..0x0018`** (Year/Month, Day/Hour, Minute/Second) enabling zero-drift clock synchronization and drift diagnostics.
+* **Rated Inverter Power:** Remapped to holding register **`0x001A`** (reads true continuous rating, e.g. 5000 W).
+* **Battery Rated Capacity:** Remapped to holding register **`0x00CC`** (reads nominal battery capacity, e.g. 100 Ah).
+* **Grid Reactive Power & Total DC Power:** Synthesized high-precision sensors calculating true VAR power factor and combined PV array wattage.
 * **Battery Chemistry Thresholds:** Single-phase registers **`0x00D9`** (Shutdown SOC), **`0x00DA`** (Restart SOC), and **`0x00DB`** (Low Battery Warning SOC).
 * **Grid Charge Current Limit:** Configurable 0–185A charging rate at register **`0x00E6`**.
 * **SmartLoad Dump Load Automations:** Registers **`0x00ED`** (Off SOC), **`0x00EF`** (On SOC), and **`0x00F1`** (Min Solar Power).
@@ -190,3 +199,4 @@ Home Assistant will automatically connect to your Deye inverter through the ESP3
 
 ## 📄 License
 This project is open-source under the **MIT License**. Contributions, bug reports, and pull requests are warmly welcomed!
+
