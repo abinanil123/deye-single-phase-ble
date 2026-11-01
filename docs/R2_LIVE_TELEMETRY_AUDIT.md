@@ -1,9 +1,9 @@
 ﻿# Milestone 2 Deliverable: Live Inverter Brute-Force Telemetry & State Verification (R2)
 
 **Target Hardware**: Deye SUN-8K-SG04LP1 Hybrid Single-Phase Inverter  
-**Hardware Serial / Logger SN**: `2603151961`  
+**Hardware Serial / Logger SN**: `<LOGGER_SN>`  
 **Host Integration**: `custom_components/deye_ble` (Deye Inverter BLE) via ESPHome Bluetooth Proxy (`roof-controller`)  
-**Home Assistant API**: `http://192.168.220.200:8123`  
+**Home Assistant API**: `http://<HA_LOCAL_IP>:8123`  
 **Verification Date**: 2026-11-01T14:04:12Z  
 **Audit Author**: Worker M2 (Live Telemetry Verification Worker)  
 **Audit Status**: **PASSED (100% Entity Availability, 0 Unknown, 0 Unavailable, Exact 0.00 kWh Cumulative Alignment)**  
@@ -14,7 +14,7 @@
 
 This audit deliverable provides the authoritative live brute-force state verification and telemetry comparison for Milestone 2 (R2) of the Deye SUN-8K-SG04LP1 Hybrid Inverter integration audit.
 
-Every data point documented in this report was retrieved directly from the physical inverter hardware via the Home Assistant REST API (`http://192.168.220.200:8123/api/states`) and verified against the companion Deye Cloud (Solarman logger `2603151961`) integration.
+Every data point documented in this report was retrieved directly from the physical inverter hardware via the Home Assistant REST API (`http://<HA_LOCAL_IP>:8123/api/states`) and verified against the companion Deye Cloud (Solarman logger `<LOGGER_SN>`) integration.
 
 ### Core Audit Findings
 1. **100% Entity Availability**: Exactly **82 entities** discovered and queried across all Home Assistant domains (`sensor`: 50, `number`: 18, `switch`: 6, `binary_sensor`: 4, `select`: 4). **Zero entities** are in `unknown` or `unavailable` states.
@@ -32,14 +32,14 @@ Every data point documented in this report was retrieved directly from the physi
 
 ### 2.1 Hardware & Network Topology
 - **Inverter**: Deye SUN-8K-SG04LP1 (Single-Phase Low Voltage 48V Hybrid Inverter).
-- **Logger**: Deye DL1000B Bluetooth + Wi-Fi Data Logger (SN: `2603151961`).
+- **Logger**: Deye DL1000B Bluetooth + Wi-Fi Data Logger (SN: `<LOGGER_SN>`).
 - **Bluetooth Proxy**: ESP32 running ESPHome (`roof-controller`), forwarding raw BLE advertising and GATT Modbus frames to Home Assistant over Wi-Fi/Ethernet.
-- **Home Assistant Host**: Home Assistant OS at `192.168.220.200:8123`.
+- **Home Assistant Host**: Home Assistant OS at `<HA_LOCAL_IP>:8123`.
 - **Target Custom Component**: `custom_components/deye_ble`.
-- **Reference Cloud Component**: `solarman` / Deye Cloud logger integration (`deye_inverter_2603151961`).
+- **Reference Cloud Component**: `solarman` / Deye Cloud logger integration (`deye_inverter_<LOGGER_SN>`).
 
 ### 2.2 Live Brute-Force Testing Procedure
-The live audit was executed using direct HTTP REST requests to `http://192.168.220.200:8123/api/states` authorized via a long-lived Bearer JWT token.
+The live audit was executed using direct HTTP REST requests to `http://<HA_LOCAL_IP>:8123/api/states` authorized via a long-lived Bearer JWT token.
 - **Endpoint Reachability**: Verified via `GET /api/` -> `{"message": "API running."}`.
 - **Query Filter**: All entities matching `*deye_inverter_ble*` were extracted, inspected, and categorized.
 - **State Validation**: Filter applied for `state -in @('unknown', 'unavailable')`.
@@ -201,7 +201,7 @@ Every sensor entity was validated against its physical dimension, SI unit conven
 
 ## 5. Empirical Telemetry Comparison: BLE Live vs Deye Cloud (Solarman)
 
-A side-by-side empirical verification was executed comparing matching entities between `deye_inverter_ble` and the official Deye Cloud logger integration (`deye_inverter_2603151961`).
+A side-by-side empirical verification was executed comparing matching entities between `deye_inverter_ble` and the official Deye Cloud logger integration (`deye_inverter_<LOGGER_SN>`).
 
 ### 5.1 The Complete 28-Metric Side-by-Side Comparison Matrix
 | # | Metric Name | Metric Type | BLE Live State | Cloud State | Absolute Delta | BLE Timestamp (UTC) | Cloud Timestamp (UTC) | Latency / Divergence Root Cause |
@@ -253,33 +253,33 @@ The observed difference in instantaneous Grid Power (-166 W) and House Load Powe
 ---
 
 ### 5.4 Broken / Unknown Entities in Cloud Bridge
-The companion Deye Cloud integration (`deye_inverter_2603151961`) was found to have **23 permanently broken / unknown entities**:
+The companion Deye Cloud integration (`deye_inverter_<LOGGER_SN>`) was found to have **23 permanently broken / unknown entities**:
 
 | # | Cloud Entity ID | Domain | Observed State | Root Cause Analysis |
 | :-: | :--- | :---: | :---: | :--- |
-| 1 | `sensor.roof_deye_inverter_2603151961_dcvoltagepv4_2603151961` | sensor | `unknown` | Hardware only has 2 MPPT strings. Cloud integration blindly assumes 4 strings. |
-| 2 | `sensor.roof_deye_inverter_2603151961_dccurrentpv4_2603151961` | sensor | `unknown` | Non-existent PV string 4. |
-| 3 | `sensor.roof_deye_inverter_2603151961_dcpowerpv4_2603151961` | sensor | `unknown` | Non-existent PV string 4. |
-| 4 | `sensor.roof_deye_inverter_2603151961_generatorfrequency_2603151961` | sensor | `unknown` | AUX port is set to `SmartLoad`, not generator. Cloud polls generator registers blindly. |
-| 5 | `sensor.roof_deye_inverter_2603151961_genvoltage_2603151961` | sensor | `unknown` | AUX port is set to `SmartLoad`, not generator. |
-| 6 | `sensor.roof_deye_inverter_2603151961_totalgenpower_2603151961` | sensor | `unknown` | AUX port is set to `SmartLoad`, not generator. |
-| 7 | `sensor.roof_deye_inverter_2603151961_gendailyruntime_2603151961` | sensor | `unknown` | AUX port is set to `SmartLoad`, not generator. |
-| 8 | `sensor.roof_deye_inverter_2603151961_dailyproductiongenerator_2603151961` | sensor | `unknown` | AUX port is set to `SmartLoad`, not generator. |
-| 9 | `sensor.roof_deye_inverter_2603151961_totalproductiongenerator_2603151961` | sensor | `unknown` | AUX port is set to `SmartLoad`, not generator. |
-| 10 | `sensor.roof_deye_inverter_2603151961_totalgeneratorproduction_2603151961` | sensor | `unknown` | AUX port is set to `SmartLoad`, not generator. |
-| 11 | `sensor.roof_deye_inverter_2603151961_mipower_2603151961` | sensor | `unknown` | No microinverter attached to AUX port. |
-| 12 | `switch.roof_deye_inverter_2603151961_grid_charge` | switch | `unknown` | Cloud lacks single-phase holding register decode/write bridge. |
-| 13 | `switch.roof_deye_inverter_2603151961_solar_sell` | switch | `unknown` | Cloud lacks single-phase holding register decode/write bridge. |
-| 14 | `switch.roof_deye_inverter_2603151961_time_of_use` | switch | `unknown` | Cloud lacks single-phase holding register decode/write bridge. |
-| 15 | `select.roof_deye_inverter_2603151961_work_mode` | select | `unknown` | Cloud lacks single-phase holding register decode/write bridge. |
-| 16 | `select.roof_deye_inverter_2603151961_energy_pattern` | select | `unknown` | Cloud lacks single-phase holding register decode/write bridge. |
-| 17 | `number.roof_deye_inverter_2603151961_max_charge_current` | number | `unknown` | Cloud lacks single-phase holding register decode/write bridge. |
-| 18 | `number.roof_deye_inverter_2603151961_max_discharge_current` | number | `unknown` | Cloud lacks single-phase holding register decode/write bridge. |
-| 19 | `number.roof_deye_inverter_2603151961_grid_charge_current` | number | `unknown` | Cloud lacks single-phase holding register decode/write bridge. |
-| 20 | `number.roof_deye_inverter_2603151961_max_sell_power` | number | `unknown` | Cloud lacks single-phase holding register decode/write bridge. |
-| 21 | `number.roof_deye_inverter_2603151961_max_solar_power` | number | `unknown` | Cloud lacks single-phase holding register decode/write bridge. |
-| 22 | `button.deye_inverter_2603151961_deye_solar_sell_enable` | button | `unknown` | Cloud unverified button action. |
-| 23 | `button.deye_inverter_2603151961_deye_solar_sell_disable` | button | `unknown` | Cloud unverified button action. |
+| 1 | `sensor.roof_deye_inverter_<LOGGER_SN>_dcvoltagepv4_<LOGGER_SN>` | sensor | `unknown` | Hardware only has 2 MPPT strings. Cloud integration blindly assumes 4 strings. |
+| 2 | `sensor.roof_deye_inverter_<LOGGER_SN>_dccurrentpv4_<LOGGER_SN>` | sensor | `unknown` | Non-existent PV string 4. |
+| 3 | `sensor.roof_deye_inverter_<LOGGER_SN>_dcpowerpv4_<LOGGER_SN>` | sensor | `unknown` | Non-existent PV string 4. |
+| 4 | `sensor.roof_deye_inverter_<LOGGER_SN>_generatorfrequency_<LOGGER_SN>` | sensor | `unknown` | AUX port is set to `SmartLoad`, not generator. Cloud polls generator registers blindly. |
+| 5 | `sensor.roof_deye_inverter_<LOGGER_SN>_genvoltage_<LOGGER_SN>` | sensor | `unknown` | AUX port is set to `SmartLoad`, not generator. |
+| 6 | `sensor.roof_deye_inverter_<LOGGER_SN>_totalgenpower_<LOGGER_SN>` | sensor | `unknown` | AUX port is set to `SmartLoad`, not generator. |
+| 7 | `sensor.roof_deye_inverter_<LOGGER_SN>_gendailyruntime_<LOGGER_SN>` | sensor | `unknown` | AUX port is set to `SmartLoad`, not generator. |
+| 8 | `sensor.roof_deye_inverter_<LOGGER_SN>_dailyproductiongenerator_<LOGGER_SN>` | sensor | `unknown` | AUX port is set to `SmartLoad`, not generator. |
+| 9 | `sensor.roof_deye_inverter_<LOGGER_SN>_totalproductiongenerator_<LOGGER_SN>` | sensor | `unknown` | AUX port is set to `SmartLoad`, not generator. |
+| 10 | `sensor.roof_deye_inverter_<LOGGER_SN>_totalgeneratorproduction_<LOGGER_SN>` | sensor | `unknown` | AUX port is set to `SmartLoad`, not generator. |
+| 11 | `sensor.roof_deye_inverter_<LOGGER_SN>_mipower_<LOGGER_SN>` | sensor | `unknown` | No microinverter attached to AUX port. |
+| 12 | `switch.roof_deye_inverter_<LOGGER_SN>_grid_charge` | switch | `unknown` | Cloud lacks single-phase holding register decode/write bridge. |
+| 13 | `switch.roof_deye_inverter_<LOGGER_SN>_solar_sell` | switch | `unknown` | Cloud lacks single-phase holding register decode/write bridge. |
+| 14 | `switch.roof_deye_inverter_<LOGGER_SN>_time_of_use` | switch | `unknown` | Cloud lacks single-phase holding register decode/write bridge. |
+| 15 | `select.roof_deye_inverter_<LOGGER_SN>_work_mode` | select | `unknown` | Cloud lacks single-phase holding register decode/write bridge. |
+| 16 | `select.roof_deye_inverter_<LOGGER_SN>_energy_pattern` | select | `unknown` | Cloud lacks single-phase holding register decode/write bridge. |
+| 17 | `number.roof_deye_inverter_<LOGGER_SN>_max_charge_current` | number | `unknown` | Cloud lacks single-phase holding register decode/write bridge. |
+| 18 | `number.roof_deye_inverter_<LOGGER_SN>_max_discharge_current` | number | `unknown` | Cloud lacks single-phase holding register decode/write bridge. |
+| 19 | `number.roof_deye_inverter_<LOGGER_SN>_grid_charge_current` | number | `unknown` | Cloud lacks single-phase holding register decode/write bridge. |
+| 20 | `number.roof_deye_inverter_<LOGGER_SN>_max_sell_power` | number | `unknown` | Cloud lacks single-phase holding register decode/write bridge. |
+| 21 | `number.roof_deye_inverter_<LOGGER_SN>_max_solar_power` | number | `unknown` | Cloud lacks single-phase holding register decode/write bridge. |
+| 22 | `button.deye_inverter_<LOGGER_SN>_deye_solar_sell_enable` | button | `unknown` | Cloud unverified button action. |
+| 23 | `button.deye_inverter_<LOGGER_SN>_deye_solar_sell_disable` | button | `unknown` | Cloud unverified button action. |
 
 **BLE Integration Resilience**: The `deye_ble` integration contains **0 unknown entities** because it conditionally configures entities based on the physical single-phase hardware profile, decodes SmartLoad power properly on register `0x00A6`, and avoids registering entities for unsupported hardware channels.
 
