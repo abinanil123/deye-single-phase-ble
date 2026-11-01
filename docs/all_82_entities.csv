@@ -1,0 +1,83 @@
+﻿"EntityID","Domain","FriendlyName","State","Unit","DeviceClass"
+"binary_sensor.deye_inverter_ble_grid_connected","binary_sensor","Deye Inverter (BLE) Grid Connected","on",,"connectivity"
+"binary_sensor.deye_inverter_ble_cloud_clock_sync_enabled","binary_sensor","Deye Inverter (BLE)","off",,
+"binary_sensor.deye_inverter_ble_inverter_fault","binary_sensor","Deye Inverter (BLE) Inverter Fault","off",,"problem"
+"binary_sensor.deye_inverter_ble_inverter_warning","binary_sensor","Deye Inverter (BLE) Inverter Warning","off",,"problem"
+"sensor.deye_inverter_ble_solar_power","sensor","Deye Inverter (BLE) Solar Power BLE LD","1","W","power"
+"sensor.deye_inverter_ble_battery_power","sensor","Deye Inverter (BLE) Battery Power BLE LD","13","W","power"
+"sensor.deye_inverter_ble_battery_soc","sensor","Deye Inverter (BLE) Battery SOC BLE LD","94","%","battery"
+"sensor.deye_inverter_ble_grid_power","sensor","Deye Inverter (BLE) Grid Power BLE LD","454","W","power"
+"sensor.deye_inverter_ble_grid_voltage_l1","sensor","Deye Inverter (BLE) Grid Voltage L1 BLE LD","231.7","V","voltage"
+"sensor.deye_inverter_ble_grid_current_l1_ble_ld","sensor","Deye Inverter (BLE) Grid Current L1 BLE LD","1.99","A","current"
+"sensor.deye_inverter_ble_internal_ct_l1_power","sensor","Deye Inverter (BLE) Internal CT L1 Power BLE LD","454","W","power"
+"sensor.deye_inverter_ble_external_ct_l1_power","sensor","Deye Inverter (BLE) External CT L1 Power BLE LD","0","W","power"
+"sensor.deye_inverter_ble_house_load","sensor","Deye Inverter (BLE) House Load BLE LD","435","W","power"
+"sensor.deye_inverter_ble_ups_power","sensor","Deye Inverter (BLE) UPS Power BLE LD","435","W","power"
+"sensor.deye_inverter_ble_gen_power","sensor","Deye Inverter (BLE) SmartLoad Power BLE LD","277","W","power"
+"sensor.deye_inverter_ble_ups_load_power","sensor","Deye Inverter (BLE) UPS Load Power BLE LD","158","W","power"
+"sensor.deye_inverter_ble_ac_voltage_l1_ble_ld","sensor","Deye Inverter (BLE) AC Voltage L1 BLE LD","231.7","V","voltage"
+"sensor.deye_inverter_ble_pv1_power_ble_fd","sensor","Deye Inverter (BLE) PV1 Power BLE FD","1","W","power"
+"sensor.deye_inverter_ble_pv1_voltage","sensor","Deye Inverter (BLE) PV1 Voltage BLE FD","9.0","V","voltage"
+"sensor.deye_inverter_ble_pv2_power_ble_fd","sensor","Deye Inverter (BLE) PV2 Power BLE FD","0","W","power"
+"sensor.deye_inverter_ble_pv2_voltage_ble_fd","sensor","Deye Inverter (BLE) PV2 Voltage BLE FD","0.0","V","voltage"
+"sensor.deye_inverter_ble_solar_today","sensor","Deye Inverter (BLE) Daily Solar BLE FD","22.3","kWh","energy"
+"sensor.deye_inverter_ble_battery_voltage","sensor","Deye Inverter (BLE) Battery Voltage BLE FD","53.36","V","voltage"
+"sensor.deye_inverter_ble_battery_temperature","sensor","Deye Inverter (BLE) Battery Temperature BLE FD","31.0","Â°C","temperature"
+"sensor.deye_inverter_ble_daily_battery_charge_ble_fd","sensor","Deye Inverter (BLE) Daily Battery Charge BLE FD","1.7","kWh","energy"
+"sensor.deye_inverter_ble_daily_battery_discharge_ble_fd","sensor","Deye Inverter (BLE) Daily Battery Discharge BLE FD","0.5","kWh","energy"
+"sensor.deye_inverter_ble_grid_frequency","sensor","Deye Inverter (BLE) Grid Frequency BLE FD","49.98","Hz","frequency"
+"sensor.deye_inverter_ble_grid_total_reactive_power_ble_fd","sensor","Deye Inverter (BLE) Grid Total Reactive Power BLE FD","80.5","VAR",
+"sensor.deye_inverter_ble_grid_import_today","sensor","Deye Inverter (BLE) Daily Grid Import BLE FD","3.6","kWh","energy"
+"sensor.deye_inverter_ble_grid_export_today","sensor","Deye Inverter (BLE) Daily Grid Export BLE FD","12.4","kWh","energy"
+"sensor.deye_inverter_ble_daily_load_energy_ble_fd","sensor","Deye Inverter (BLE) Daily Load Energy BLE FD","9.8","kWh","energy"
+"sensor.deye_inverter_ble_inverter_temperature","sensor","Deye Inverter (BLE) Inverter Temperature BLE FD","39.4","Â°C","temperature"
+"sensor.deye_inverter_ble_dc_temperature_ble_fd","sensor","Deye Inverter (BLE) DC Temperature BLE FD","39.1","Â°C","temperature"
+"sensor.deye_inverter_ble_total_dc_input_power_ble_fd","sensor","Deye Inverter (BLE) Total DC Input Power BLE FD","1","W","power"
+"sensor.deye_inverter_ble_solar_total","sensor","Deye Inverter (BLE) Total Solar BLE SD","1623.0","kWh","energy"
+"sensor.deye_inverter_ble_grid_import_total","sensor","Deye Inverter (BLE) Total Grid Import BLE SD","579.4","kWh","energy"
+"sensor.deye_inverter_ble_grid_export_total","sensor","Deye Inverter (BLE) Total Grid Export BLE SD","617.3","kWh","energy"
+"sensor.deye_inverter_ble_battery_charge_total","sensor","Deye Inverter (BLE) Total Battery Charge BLE SD","340.3","kWh","energy"
+"sensor.deye_inverter_ble_battery_discharge_total","sensor","Deye Inverter (BLE) Total Battery Discharge BLE SD","229.7","kWh","energy"
+"sensor.deye_inverter_ble_total_consumption_ble_sd","sensor","Deye Inverter (BLE) Total Consumption BLE SD","1253.1","kWh","energy"
+"sensor.deye_inverter_ble_max_solar_power_ble_sd","sensor","Deye Inverter (BLE) Max Solar Power BLE SD","6500","W","power"
+"sensor.deye_inverter_ble_inverter_fault_message_ble_sd","sensor","Deye Inverter (BLE) Inverter Fault Message BLE SD","OK",,
+"sensor.deye_inverter_ble_inverter_warning_message_ble_sd","sensor","Deye Inverter (BLE) Inverter Warning Message BLE SD","OK",,
+"sensor.deye_inverter_ble_rated_inverter_power_ble_sd","sensor","Deye Inverter (BLE) Rated Inverter Power BLE SD","5000","W","power"
+"sensor.deye_inverter_ble_battery_rated_capacity_ble_sd","sensor","Deye Inverter (BLE) Battery Rated Capacity BLE SD","100","Ah",
+"sensor.deye_inverter_ble_battery_status","sensor","Deye Inverter (BLE) Battery Status BLE LD","Stand-by",,"enum"
+"sensor.deye_inverter_ble_grid_status","sensor","Deye Inverter (BLE) Grid Status BLE LD","BUY",,"enum"
+"sensor.deye_inverter_ble_inverter_status_ble_ld","sensor","Deye Inverter (BLE) Inverter Status BLE LD","Normal",,"enum"
+"sensor.deye_inverter_ble_io_mode","sensor","Deye Inverter (BLE) IO Mode BLE FD","SmartLoad",,"enum"
+"sensor.deye_inverter_ble_energy_priority_ble_fd","sensor","Deye Inverter (BLE) Energy Priority BLE FD","Load First",,"enum"
+"sensor.deye_inverter_ble_work_mode","sensor","Deye Inverter (BLE) Work Mode BLE FD","Zero Export to Load",,"enum"
+"sensor.deye_inverter_ble_inverter_clock","sensor","Deye Inverter (BLE) Inverter Clock BLE FD","2026-11-01T14:13:54+00:00",,"timestamp"
+"sensor.deye_inverter_ble_inverter_clock_drift","sensor","Deye Inverter (BLE) Inverter Clock Drift BLE FD","-6","s","duration"
+"sensor.deye_inverter_ble_consumption_today_ble_fd","sensor","Deye Inverter (BLE) Consumption Today BLE FD","9.8","kWh","energy"
+"number.deye_inverter_ble_live_data_polling_interval_ble_ld","number","Deye Inverter (BLE) BLE: Live Polling Interval (LD)","5.0","s",
+"number.deye_inverter_ble_fast_data_polling_interval_ble_fd","number","Deye Inverter (BLE) BLE: Fast Polling Interval (FD)","60.0","s",
+"number.deye_inverter_ble_slow_data_polling_interval_ble_sd","number","Deye Inverter (BLE) BLE: Slow Polling Interval (SD)","5.0","min",
+"number.deye_inverter_ble_cloud_sync_frequency","number","Deye Inverter (BLE) BLE: Cloud Sync Frequency","5.0","min",
+"number.deye_inverter_ble_cloud_window_duration","number","Deye Inverter (BLE) BLE: Cloud Window Duration","30.0","s",
+"number.deye_inverter_ble_max_sell_power","number","Deye Inverter (BLE) Max Sell Power","5000.0","W","power"
+"number.deye_inverter_ble_zero_export_power","number","Deye Inverter (BLE) Zero Export Power","20.0","W","power"
+"number.deye_inverter_ble_max_charge_current","number","Deye Inverter (BLE) Max Charge Current","50.0","A","current"
+"number.deye_inverter_ble_max_discharge_current","number","Deye Inverter (BLE) Max Discharge Current","100.0","A","current"
+"number.deye_inverter_ble_grid_charge_current_limit","number","Deye Inverter (BLE) Grid Charge Current Limit","20.0","A","current"
+"number.deye_inverter_ble_battery_shutdown_soc","number","Deye Inverter (BLE) Battery Shutdown SOC","15.0","%",
+"number.deye_inverter_ble_battery_restart_soc","number","Deye Inverter (BLE) Battery Restart SOC","25.0","%",
+"number.deye_inverter_ble_battery_low_soc","number","Deye Inverter (BLE) Battery Low SOC","25.0","%",
+"number.deye_inverter_ble_smartload_off_soc","number","Deye Inverter (BLE) SmartLoad OFF SOC","60.0","%",
+"number.deye_inverter_ble_smartload_on_soc","number","Deye Inverter (BLE) SmartLoad ON SOC","70.0","%",
+"number.deye_inverter_ble_smartload_min_solar_power","number","Deye Inverter (BLE) SmartLoad Min Solar Power","0.0","W","power"
+"number.deye_inverter_ble_grid_peak_shaving_power_limit","number","Deye Inverter (BLE) Grid Peak Shaving Power Limit","8000.0","W","power"
+"number.deye_inverter_ble_gen_peak_shaving_power_limit","number","Deye Inverter (BLE) Gen Peak Shaving Power Limit","5000.0","W","power"
+"select.deye_inverter_ble_connection_mode","select","Deye Inverter (BLE) BLE: Connection Mode","BLE with Deye Cloud",,
+"select.deye_inverter_ble_work_mode","select","Deye Inverter (BLE) Work Mode","Zero Export to Load",,
+"select.deye_inverter_ble_energy_priority_pattern","select","Deye Inverter (BLE) Energy Priority Pattern","Load First",,
+"select.deye_inverter_ble_io_port_mode","select","Deye Inverter (BLE) IO Port Mode","SmartLoad",,
+"switch.deye_inverter_ble_allow_inverter_writes","switch","Deye Inverter (BLE) Allow Inverter Writes","off",,"switch"
+"switch.deye_inverter_ble_solar_sell","switch","Deye Inverter (BLE) Solar Sell","on",,"switch"
+"switch.deye_inverter_ble_grid_charge_master","switch","Deye Inverter (BLE) Grid Charge Master","on",,"switch"
+"switch.deye_inverter_ble_time_of_use","switch","Deye Inverter (BLE) Time of Use","on",,"switch"
+"switch.deye_inverter_ble_grid_peak_shaving","switch","Deye Inverter (BLE) Grid Peak Shaving","off",,"switch"
+"switch.deye_inverter_ble_gen_peak_shaving","switch","Deye Inverter (BLE) Gen Peak Shaving","off",,"switch"
