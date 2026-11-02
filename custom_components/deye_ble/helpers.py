@@ -57,20 +57,26 @@ async def async_poll(transport: Transport, *, with_config: bool = False, full_te
 # near zero (the inverter's own output/load voltage stays up, but that is a
 # different register). 100 V cleanly separates "energised" from "collapsed".
 GRID_PRESENT_VOLTAGE = 100.0
+GRID_PRESENT_FREQUENCY = 40.0
 
-_GRID_VOLTAGE_KEYS = ("grid_voltage_l1", "grid_voltage_l2", "grid_voltage_l3")
+_GRID_VOLTAGE_KEYS = ("grid_voltage_l1", "grid_voltage_l2", "grid_voltage_l3", "grid_voltage")
 
 
 def infer_grid_connected(data: dict[str, Any]) -> bool | None:
-    """Infer grid-connection state from the per-phase grid voltages.
+    """Infer grid-connection state; every reported signal must look healthy.
 
-    Returns ``True`` if any phase is energised above ``GRID_PRESENT_VOLTAGE``,
-    ``False`` if all reported phases are below it, and ``None`` if no grid
-    voltage was reported (unknown â€” never a false "disconnected").
+    Returns False if relay is open (reg 194), frequency is below 40 Hz,
+    or grid voltage is below 100 V. Returns True if all present signals look healthy.
     """
+    relay = data.get("grid_connected")
+    if relay is False:
+        return False
+    frequency = data.get("grid_frequency")
+    if frequency is not None and frequency < GRID_PRESENT_FREQUENCY:
+        return False
     voltages = [data[k] for k in _GRID_VOLTAGE_KEYS if data.get(k) is not None]
     if not voltages:
-        return None
+        return relay
     return max(voltages) > GRID_PRESENT_VOLTAGE
 
 
